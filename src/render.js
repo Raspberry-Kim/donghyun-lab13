@@ -53,7 +53,7 @@ function render(g,S,t){
   for(const b of S.builds) building(g,S,b,t);
   for(const e of S.ens){ if(!e.alive) continue; if(e.type==='soldier') SP.soldier(g,e,t); else if(e.type==='tank') SP.tank(g,e,t); else if(e.type==='heli') SP.heli(g,e,t); else SP.car(g,e,t); }
   /* 괴물 그림자 */
-  const h=S.hero; if(h.state!=='climb'){ g.fillStyle='rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(h.x,GROUND-1,10,2,0,0,Math.PI*2); g.fill(); }
+  const h=S.hero; if(h.state!=='climb'){ g.fillStyle='rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(h.x,(h.state==='roof'?h.y:GROUND)-1,10,2,0,0,Math.PI*2); g.fill(); }
   SP.drawMonster(g,E.form(S),h,t,h.x,h.y);
   for(const s of S.shots) SP.shot(g,s);
   for(const x of S.fx){ if(x.k==='quake') continue; SP.fx(g,x); }

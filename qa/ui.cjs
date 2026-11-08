@@ -49,7 +49,7 @@ const H='window.__donghyunram';
   // 건물 위를 찍으면 걸어가서 오른다
   const b2=await G('[S.builds[2].x+20, S.builds[2].floors]'); a=await at(b2[0],176-40); await p.mouse.click(a.x,a.y); await p.waitForTimeout(4000); t=await txt(); assert.strictEqual(t.hero.state,'climb','건물 찍기 → 오름 '+JSON.stringify(t.hero)); ok('마우스: 괴물 찍기 주먹 · 길 찍기 걷기 · 위로 튕김 점프 · 건물 찍기 오르기');
   // 5) 먹기: 사람 든 구멍을 치면 체력이 차고 먹는 동작이 나온다
-  await p.evaluate(()=>{ const D=window.__donghyunram, S=D.state, E=window.Engine; const b=S.builds[2]; const h=S.hero; h.state='climb'; h.bld=2; h.x=b.x+8; h.y=E.GROUND-4-E.FLOOR*2; h.dir=1; h.stam=40; h.eatT=0; h.punchT=0; const at=E.cellAt(b,b.x+18,h.y-E.HAND); at.cell.hp=0; at.cell.person=1; });
+  await p.evaluate(()=>{ const D=window.__donghyunram, S=D.state, E=window.Engine; const b=S.builds[2]; const h=S.hero; h.state='climb'; h.bld=2; h.x=b.x+8; h.y=E.GROUND-4-E.FLOOR*2; h.dir=1; h.stam=40; h.eatT=0; h.punchT=0; S.drainT=1000; /* 4초 체력 감소가 끼어들지 않게 */ const at=E.cellAt(b,b.x+18,h.y-E.HAND); at.cell.hp=0; at.cell.person=1; });
   await p.keyboard.press('KeyZ'); await p.waitForTimeout(300); t=await txt(); assert.strictEqual(t.hero.stam,60,'사람 +20'); assert.ok(t.hero.eatT>0&&['gulp','chew','toss','smoke'].includes(t.hero.eatKind),'먹는 동작'); assert.match(await p.$eval('#log',e=>e.textContent),/사람을 (꿀꺽 삼켰다|우적우적 씹어 먹었다|공중에 던져 받아먹었다|꿀꺽 삼키고 담배를 한 모금 물었다)\./); ok('먹기: +20 · 동작 · 기록');
   // 6) 저장 메뉴: 칸 1 저장 → 덮어쓰기 확인 → 불러오기 확인 → .dhsave 내려받기·열기 · 잘못된 파일 · 칸 지우기
   await p.evaluate(()=>{ window.__dl=null; URL.createObjectURL=(blob)=>{ blob.text().then(t=>window.__dl=t); return 'blob:x'; }; URL.revokeObjectURL=()=>{}; HTMLAnchorElement.prototype.click=function(){ window.__dlname=this.download; }; });

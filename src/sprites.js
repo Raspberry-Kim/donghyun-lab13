@@ -39,6 +39,9 @@ function person(g,x,y,f,wave,c){ /* 발 기준 x,y · 높이 8 */
 /* 자세 계산: 상태와 프레임으로 부위 위치를 만든다. 오른쪽 보기 기준(dir=1), 발 중심이 (0,0), 위가 음수.
    괴물마다 키(HGT)가 달라 어깨 높이 sh·입 높이 my를 키에서 구하고, 손 위치는 A(dx,dy)=어깨에서 dx 옆·dy 아래로 적는다 */
 const HGT={podong:36,shushu:34,lion:40,copter:28,doom:38};
+/* 주먹 팔: 방향키대로 앞·위·아래로 뻗는다 */
+function punchArm(A,h,ext,len){ const pd=h.pdy||0; if(pd<0) return A(4+Math.round(ext*8),2-Math.round(ext*22)); if(pd>0) return A(4+Math.round(ext*8),4+Math.round(ext*14)); return A(6+Math.round(ext*len),2-Math.round(ext*4)); }
+
 function poseOf(h,t,f){
   const HG=HGT[f.key]||36, sh=-Math.round(HG*0.67), my=-(HG-4);
   const A=(dx,dy)=>[dx,sh+dy];
@@ -47,10 +50,11 @@ function poseOf(h,t,f){
   if(h.shrinkT>0) return P;
   if(h.state==='climb'){ P.back=true; const c=Math.floor(h.climbT/8)%2; /* 벽을 안고 오른다: 팔은 번갈아 위로 */
     P.arm=[A(9,c?-14:-6),A(-9,c?-6:-14)]; P.leg=[[5,c?-4:0],[-5,c?0:-4]];
-    if(h.punchT>0){ P.back=false; const k=1-h.punchT/16; const ext=k<0.6?k/0.6:1-(k-0.6)/0.4*0.4; P.arm=[A(6+Math.round(ext*20),2-Math.round(ext*4)),A(-6,10)]; P.mouth=0.4; P.leg=[[5,-2],[-5,0]]; }
+    if(h.punchT>0){ P.back=false; const k=1-h.punchT/16; const ext=k<0.6?k/0.6:1-(k-0.6)/0.4*0.4; P.arm=[punchArm(A,h,ext,20),A(-6,10)]; P.mouth=0.4; P.leg=[[5,-2],[-5,0]]; }
+    else if(h.side){ /* 옆벽에 붙어 있다: 두 팔로 모서리를 안는다 */ const inward=-h.side; P.arm=[A(inward*6,c?-12:-6),A(inward*9,c?-6:-12)]; P.lean=-inward*2; }
   } else if(h.state==='air'){ const fly=h.hang>1.5; P.arm=fly?[A(9,-6),A(-9,-6)]:[A(8,-8),A(-6,0)]; P.leg=fly?[[3,2],[-3,2]]:[[5,-3],[-4,1]]; P.mouth=0.3; P.eyes=fly?'open':'wide'; }
   else { /* 땅 */
-    if(h.punchT>0){ const k=1-h.punchT/16; const ext=k<0.5?k/0.5:1-(k-0.5)/0.5*0.5; P.arm=[A(6+Math.round(ext*22),2-Math.round(ext*4)),A(-6,10)]; P.lean=Math.round(ext*3); P.mouth=0.6; P.leg=[[5,0],[-4,0]]; }
+    if(h.punchT>0){ const k=1-h.punchT/16; const ext=k<0.5?k/0.5:1-(k-0.5)/0.5*0.5; P.arm=[punchArm(A,h,ext,22),A(-6,10)]; P.lean=h.pdy?0:Math.round(ext*3); P.mouth=0.6; P.leg=[[5,0],[-4,0]]; }
     else if(h.walkT>0){ P.leg=[[Math.round(3+walk*4),0],[Math.round(-3+w2*4),0]]; P.arm=[A(Math.round(4+w2*4),13),A(Math.round(-4+walk*4),13)]; P.body=Math.abs(walk)>0.7?-1:0; }
     else { P.arm=[A(5,14),A(-5,14)]; P.body=(t>>4)&1?0:-1; }
   }

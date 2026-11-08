@@ -2,7 +2,7 @@
    그림·소리와 떨어진 순수 상태 기계라 node에서도 돈다. 난수는 상태 안의 rs 하나로만 돌려 저장·복원이 그대로 된다. */
 (function(root){
 'use strict';
-const W=320, H=200, GROUND=176, FLOOR=16, BW=40, SLOT=48, COLS=2, CELL_W=BW/COLS, HAND=14; /* 손은 발에서 14px 위: 길에 서면 1층, 매달리면 그 위층을 친다 */
+const W=320, H=200, GROUND=176, FLOOR=16, BW=40, SLOT=48, COLS=2, CELL_W=BW/COLS, HAND=14, EDGE=2; /* 손은 발에서 14px 위: 길에 서면 1층, 매달리면 그 위층을 친다. EDGE: 옆벽에 붙을 때 몸이 건물 밖으로 나가는 폭 */
 const MAX_STAM=100, DRAIN_EVERY=240; /* 4초에 1칸: 가만히 있어도 6~7분은 버틴다. 맞아도 조금만 깎이고 먹으면 크게 차서 거의 가득 찬 채로 논다 */
 const FORMS=[
   {id:1,key:'podong',name:'포동이',from:'실험실의 강아지',color:'#f6ecd6',atk:1.0,def:1.0,reach:1,speed:1.0,hang:1.0,
@@ -65,7 +65,7 @@ function newGame(cfg){
 function loadCity(S){
   const {C,builds}=makeCity(S,S.city); S.builds=builds; S.ens=[]; S.shots=[]; S.fx=[]; S.cleared=0; S.spawnT=90; S.heliT=C.heli?540:1e9; S.carT=160;
   const f=form(S);
-  S.hero={x:W/2,y:GROUND,vx:0,vy:0,dir:1,state:'ground',bld:-1,punchT:0,eatT:0,eatKind:'gulp',eats:S.hero?S.hero.eats||0:0,hurtT:0,stam:S.hero?S.hero.stam:MAX_STAM,shrinkT:0,inv:60,walkT:0,climbT:0,steps:0,hang:f.hang};
+  S.hero={x:W/2,y:GROUND,vx:0,vy:0,dir:1,state:'ground',bld:-1,punchT:0,eatT:0,eatKind:'gulp',eats:S.hero?S.hero.eats||0:0,hurtT:0,stam:S.hero?S.hero.stam:MAX_STAM,shrinkT:0,inv:60,walkT:0,climbT:0,steps:0,hang:f.hang,side:0,pdx:0,pdy:0};
   if(S.hero.stam<40) S.hero.stam=40;
   S.events.push({t:'city',city:S.city,name:C.name});
 }
@@ -74,6 +74,8 @@ function cityOf(S){ return CITIES[(S.city-1)%CITIES.length]; }
 function heroBox(h){ return {x:h.x-12,y:h.y-36,w:24,h:36}; }
 function buildAt(S,x){ for(const b of S.builds) if(b.state==='up'&&x>=b.x&&x<=b.x+b.w) return b; return null; }
 function topY(b){ return GROUND-b.floors*FLOOR; }
+/* 틈까지 포함해 가장 가까운 선 건물 */
+function buildNear(S,x,tol){ let best=null,bd=1e9; for(const b of S.builds){ if(b.state!=='up') continue; const d=x<b.x?b.x-x:x>b.x+b.w?x-b.x-b.w:0; if(d<=tol&&d<bd){ best=b; bd=d; } } return best; }
 /* 손 높이의 칸 */
 function cellAt(b,x,y){ const r=Math.floor((GROUND-y)/FLOOR), c=clamp(Math.floor((x-b.x)/CELL_W),0,COLS-1); if(r<0||r>=b.floors) return null; return {r,c,cell:b.cells[r][c]}; }
 function addFx(S,kind,x,y,n){ S.fx.push({k:kind,x,y,t:0,n:n||0}); }
@@ -92,11 +94,11 @@ const EAT_KINDS=['gulp','chew','toss','smoke']; /* 꿀꺽 · 우적우적 씹기
 function eat(S,score,stam,what){ const h=S.hero; h.stam=Math.min(MAX_STAM,h.stam+stam); h.eatKind=EAT_KINDS[Math.floor(rng(S)*EAT_KINDS.length)]; h.eatT=h.eatKind==='smoke'?70:h.eatKind==='toss'?54:h.eatKind==='chew'?48:36; h.eats=(h.eats||0)+1; const c=what.charCodeAt(what.length-1); S.msg=`${what}${(c>=0xac00&&c<=0xd7a3&&(c-0xac00)%28)?'을':'를'} 먹었다 +${stam}`; S.msgT=90; }
 function collapse(S,b){ if(b.state!=='up') return; b.state='falling'; b.fall=0; S.score+=SCORE.building; S.events.push({t:'collapse',i:b.i});
   for(const e of S.ens) if(e.type==='soldier'&&e.x>b.x-4&&e.x<b.x+b.w+4){ e.alive=false; S.score+=50; }
-  const h=S.hero; if(h.bld===b.i&&h.state==='climb'){ h.state='air'; h.vy=0.5; h.vx=0; h.bld=-1; h.hurtT=30; addFx(S,'quake',0,0,0); } }
+  const h=S.hero; if(h.bld===b.i&&(h.state==='climb'||h.state==='roof')){ h.state='air'; h.vy=0.5; h.vx=0; h.bld=-1; h.side=0; h.hurtT=30; addFx(S,'quake',0,0,0); } }
 
 function hurt(S,dmg,by){ const h=S.hero; if(h.inv>0||S.status!=='play'||h.shrinkT) return; const f=form(S); const real=Math.max(1,Math.round(dmg/f.def));
   h.stam-=real; h.hurtT=18; h.inv=50; S.events.push({t:'hurt',by,dmg:real});
-  if(h.stam<=0){ h.stam=0; h.shrinkT=120; h.state=h.state==='climb'?'air':h.state; h.vx=0; h.vy=0; h.bld=-1; S.events.push({t:'shrink'}); } }
+  if(h.stam<=0){ h.stam=0; h.shrinkT=120; h.state=(h.state==='climb'||h.state==='roof')?'air':h.state; h.vx=0; h.vy=0; h.bld=-1; h.side=0; S.events.push({t:'shrink'}); } }
 
 function spawnSoldier(S){ const side=rng(S)<0.5?-1:1; S.ens.push({type:'soldier',x:side<0?-10:W+10,y:GROUND,dir:-side,hp:1,alive:true,t:0,shootT:ri(S,60,120)}); }
 function spawnCar(S){ const C=cityOf(S); const type=rng(S)<0.5?'cop':'taxi'; const side=rng(S)<0.5?-1:1; S.ens.push({type,x:side<0?-20:W+20,y:GROUND,dir:-side,hp:EN[type].hp,alive:true,t:0,spd:(type==='cop'?1.3:1.0)+C.car*0.1}); }
@@ -109,7 +111,7 @@ function step(S,k){
   if(S.msgT>0) S.msgT--;
   if(h.inv>0) h.inv--; if(h.hurtT>0) h.hurtT--; if(h.eatT>0) h.eatT--;
   /* 체력은 천천히 준다 */
-  if(--S.drainT<=0){ S.drainT=DRAIN_EVERY; if(!h.shrinkT&&S.lives!==Infinity){ h.stam--; if(h.stam<=0){ h.stam=0; h.shrinkT=120; if(h.state==='climb'){ h.state='air'; h.vy=0.5; h.vx=0; h.bld=-1; } S.events.push({t:'shrink'}); } } }
+  if(--S.drainT<=0){ S.drainT=DRAIN_EVERY; if(!h.shrinkT&&S.lives!==Infinity){ h.stam--; if(h.stam<=0){ h.stam=0; h.shrinkT=120; if(h.state==='climb'||h.state==='roof'){ h.state='air'; h.vy=0.5; h.vx=0; h.bld=-1; h.side=0; } S.events.push({t:'shrink'}); } } }
   if(h.shrinkT>0){ /* 사람으로 돌아가 걸어 나간다 */
     h.shrinkT--; if(h.state==='air'){ h.vy+=0.25; h.y+=h.vy; if(h.y>=GROUND){ h.y=GROUND; h.state='ground'; } }
     if(h.shrinkT===0){ if(S.lives===Infinity||S.lives>1){ if(S.lives!==Infinity) S.lives--; h.stam=MAX_STAM; h.x=W/2; h.y=GROUND; h.state='ground'; h.bld=-1; h.inv=90; h.vx=h.vy=0; S.events.push({t:'respawn'}); } else { S.lives=0; S.status='over'; S.events.push({t:'over'}); } }
@@ -119,56 +121,73 @@ function step(S,k){
   if(h.punchT>0) h.punchT--;
   if(h.eatT>0&&h.state!=='air'){ /* 먹는 동안은 멈춰 서서 동작을 다 보여 준다 */ if(h.state==='ground') h.y=GROUND; stepWorld(S); checkClear(S); return; }
   if(h.state==='ground'){
-    h.y=GROUND; h.bld=-1;
+    h.y=GROUND; h.bld=-1; h.side=0;
     let moved=false; if(h.punchT<=0||h.punchT<6){ if(k.left){ h.x-=spd; h.dir=-1; moved=true; } else if(k.right){ h.x+=spd; h.dir=1; moved=true; } } h.walkT=moved?h.walkT+1:0;
     h.x=clamp(h.x,12,W-12);
-    if(k.up&&h.punchT<=0){ const b=buildAt(S,h.x); if(b){ h.state='climb'; h.bld=b.i; h.x=clamp(h.x,b.x+8,b.x+b.w-8); h.y=GROUND-4; S.events.push({t:'grab'}); } }
+    if(k.up&&h.punchT<=0){ const b=buildNear(S,h.x,6); if(b){ grab(S,b,GROUND-4); } }
     if(k.jumpPressed&&h.punchT<=0){ h.state='air'; h.vy=-4.2; h.vx=(k.left?-1:k.right?1:0)*1.4; S.events.push({t:'jump'}); }
   } else if(h.state==='climb'){ h.walkT=0;
     const b=S.builds[h.bld]; if(!b||b.state!=='up'){ h.state='air'; h.vy=0; h.bld=-1; }
     else {
+      const top=topY(b);
       if(h.punchT<6){
-        if(k.up){ h.y-=climbSpd; h.climbT++; } if(k.down){ h.y+=climbSpd; h.climbT++; }
-        if(k.left){ h.x-=climbSpd*0.8; h.dir=-1; h.climbT++; } if(k.right){ h.x+=climbSpd*0.8; h.dir=1; h.climbT++; }
+        if(k.up){ if(h.y<=top+8){ /* 꼭대기를 넘어 지붕에 올라선다 */ h.state='roof'; h.y=top; h.x=clamp(h.x,b.x+2,b.x+b.w-2); h.side=0; S.events.push({t:'roof'}); } else { h.y-=climbSpd; h.climbT++; } }
+        if(h.state==='climb'&&k.down){ h.y+=climbSpd; h.climbT++; }
+        /* 옆으로: 건물 가장자리(옆벽)까지 가서 거기에 붙는다. 더 밀어도 떨어지지 않는다 */
+        if(h.state==='climb'){ if(k.left){ h.x-=climbSpd*0.8; h.dir=-1; h.climbT++; } if(k.right){ h.x+=climbSpd*0.8; h.dir=1; h.climbT++; } }
       }
-      const top=topY(b); h.y=clamp(h.y,top+8,GROUND-4);
-      if(h.y>=GROUND-4&&k.down){ h.state='ground'; h.y=GROUND; h.bld=-1; }
-      if(h.x<b.x+4){ h.state='air'; h.vx=-1.2; h.vy=-0.5; h.bld=-1; h.dir=-1; S.events.push({t:'letgo'}); }
-      else if(h.x>b.x+b.w-4){ h.state='air'; h.vx=1.2; h.vy=-0.5; h.bld=-1; h.dir=1; S.events.push({t:'letgo'}); }
-      if(k.jumpPressed&&h.state==='climb'){ h.state='air'; h.vy=-3.2; h.vx=h.dir*1.6; h.bld=-1; S.events.push({t:'jump'}); }
+      if(h.state==='climb'){
+        h.x=clamp(h.x,b.x-EDGE,b.x+b.w+EDGE); h.y=clamp(h.y,top+8,GROUND-4);
+        h.side=h.x<=b.x+4?-1:h.x>=b.x+b.w-4?1:0;
+        if(h.y>=GROUND-4&&k.down){ h.state='ground'; h.y=GROUND; h.bld=-1; h.side=0; }
+        else if(k.jumpPressed){ /* 매달린 채 뛰기: 옆 건물로 건너가거나 내려온다 */ const dx=k.left?-1:k.right?1:h.dir; h.state='air'; h.vy=-3.2; h.vx=dx*1.6; h.dir=dx; h.bld=-1; h.side=0; S.events.push({t:'jump'}); }
+      }
+    }
+  } else if(h.state==='roof'){
+    const b=S.builds[h.bld]; if(!b||b.state!=='up'){ h.state='air'; h.vy=0; h.bld=-1; }
+    else {
+      h.y=topY(b); let moved=false;
+      if(h.punchT<=0||h.punchT<6){ if(k.left){ h.x-=spd; h.dir=-1; moved=true; } else if(k.right){ h.x+=spd; h.dir=1; moved=true; } } h.walkT=moved?h.walkT+1:0;
+      if(h.x<b.x-2||h.x>b.x+b.w+2){ /* 지붕 끝을 넘으면 떨어진다(옆 건물이 가까우면 그 벽을 잡는다) */ h.state='air'; h.vx=h.dir*0.8; h.vy=0.2; h.bld=-1; S.events.push({t:'letgo'}); }
+      else if(k.down&&h.punchT<=0){ grab(S,b,topY(b)+8); }
+      else if(k.jumpPressed&&h.punchT<=0){ h.state='air'; h.vy=-4.2; h.vx=(k.left?-1:k.right?1:0)*1.4; h.bld=-1; S.events.push({t:'jump'}); }
     }
   } else if(h.state==='air'){ h.walkT=0;
     const g=0.22/h.hang; h.vy+=g; h.vy=Math.min(h.vy,4.5);
     if(h.hang>1.5){ /* 꼬리콥터: 공중에서 방향을 바꾼다 */ if(k.left){ h.vx=Math.max(-1.6,h.vx-0.12); h.dir=-1; } else if(k.right){ h.vx=Math.min(1.6,h.vx+0.12); h.dir=1; } }
-    h.x+=h.vx; h.y+=h.vy; h.x=clamp(h.x,12,W-12);
-    if(h.vy>0){ const b=buildAt(S,h.x); if(b&&h.y>topY(b)+8&&h.y<GROUND-2&&h.x>b.x+6&&h.x<b.x+b.w-6){ h.state='climb'; h.bld=b.i; h.vx=h.vy=0; S.events.push({t:'grab'}); } }
-    if(h.y>=GROUND){ h.y=GROUND; h.state='ground'; h.vx=0; h.vy=0; S.events.push({t:'land'}); }
+    const py=h.y; h.x+=h.vx; h.y+=h.vy; h.x=clamp(h.x,12,W-12);
+    if(h.vy>0){ const b=buildNear(S,h.x,EDGE); if(b){ const top=topY(b);
+        if(py<=top&&h.y>=top&&h.x>=b.x&&h.x<=b.x+b.w){ /* 지붕에 내려앉으며 쿵: 꼭대기 층이 흔들려 부서진다 */ h.state='roof'; h.bld=b.i; h.y=top; h.vx=h.vy=0; stomp(S,b); }
+        else if(h.y>top+8&&h.y<GROUND-2){ grab(S,b,h.y); h.vx=h.vy=0; } } }
+    if(h.state==='air'&&h.y>=GROUND){ h.y=GROUND; h.state='ground'; h.vx=0; h.vy=0; S.events.push({t:'land'}); }
   }
-  /* 주먹 */
-  if(k.punchPressed&&h.punchT<=0&&(h.state==='ground'||h.state==='climb')){ h.punchT=16; S.events.push({t:'punch'}); }
+  /* 주먹: 방향키를 누른 채 치면 그쪽(위·아래·옆)을 친다 */
+  if(k.punchPressed&&h.punchT<=0&&(h.state==='ground'||h.state==='climb'||h.state==='roof')){ h.punchT=16; const dx=k.left?-1:k.right?1:0, dy=k.up?-1:k.down?1:0; if(dx) h.dir=dx; h.pdx=dx||(dy?0:h.dir); h.pdy=dy; S.events.push({t:'punch'}); }
   if(h.punchT===11) punch(S);
   stepWorld(S); checkClear(S);
 }
+function grab(S,b,y){ const h=S.hero; h.state='climb'; h.bld=b.i; h.x=clamp(h.x,b.x-EDGE,b.x+b.w+EDGE); h.y=clamp(y,topY(b)+8,GROUND-4); h.side=h.x<=b.x+4?-1:h.x>=b.x+b.w-4?1:0; S.events.push({t:'grab'}); }
+function stomp(S,b){ const f=form(S); const r=b.floors-1; for(let c=0;c<COLS;c++) hitCell(S,b,r,c,f.atk*2); addFx(S,'quake',0,0,0); S.events.push({t:'stomp',i:b.i}); }
 function checkClear(S){ const h=S.hero; if(S.builds.every(b=>b.state==='gone')&&S.status==='play'){ S.cleared=1; S.citiesDone++; S.score+=SCORE.city+Math.round(h.stam)*10;
     if(S.city>=CITIES.length){ S.status='win'; S.events.push({t:'win'}); } else { S.status='clear'; S.events.push({t:'clear',city:S.city}); } } }
 function punch(S){
-  const h=S.hero, f=form(S), reach=f.reach;
-  const hx=h.x+h.dir*10, hy=h.y-HAND;
-  if(h.state==='climb'){
-    const b=S.builds[h.bld]; if(!b||b.state!=='up') return;
-    const at=cellAt(b,clamp(hx,b.x+1,b.x+b.w-1),hy); if(at){ hitCell(S,b,at.r,at.c,f.atk*2);
-      if(reach>1){ const c2=at.c+h.dir; if(c2>=0&&c2<COLS) hitCell(S,b,at.r,c2,f.atk*2); else { /* 옆 건물 */ const nb=S.builds.find(o=>o.state==='up'&&o.i===b.i+h.dir); if(nb){ const at2=cellAt(nb,h.dir>0?nb.x+2:nb.x+nb.w-2,hy); if(at2) hitCell(S,nb,at2.r,at2.c,f.atk*2); } } } }
-    /* 손이 닿는 헬기 */
-    for(const e of S.ens){ if(!e.alive||e.type!=='heli') continue; const rx=hx+(reach>1?h.dir*12:0); if(Math.abs(e.x-rx)<16+reach*8&&Math.abs(e.y-hy)<16){ killEn(S,e); } }
-  } else {
+  const h=S.hero, f=form(S), reach=f.reach, dx=h.pdx||0, dy=h.pdy||0;
+  /* 손이 닿는 자리: 가로로 치면 손끝, 위·아래로 치면 한 층 위·아래 */
+  const hx=h.x+(dx?dx*10:h.dir*4), hy=h.y-HAND+dy*FLOOR;
+  let hitAny=false;
+  if(h.state==='ground'){
     const range=16+reach*18; const x0=Math.min(h.x,h.x+h.dir*range), x1=Math.max(h.x,h.x+h.dir*range);
-    let hitAny=false;
-    for(const e of S.ens){ if(!e.alive||e.type==='heli') continue; if(e.x>=x0-8&&e.x<=x1+8){ e.hp-=f.atk>=1.4?2:1; hitAny=true; S.events.push({t:'hit'}); if(e.hp<=0) killEn(S,e); else addFx(S,'spark',e.x,e.y-8,0); } }
-    /* 길에서 옆 건물의 1층을 치기 */
-    const b=buildAt(S,hx); if(b){ const at=cellAt(b,hx,hy); if(at){ hitCell(S,b,at.r,at.c,f.atk*2); hitAny=true; } }
-    if(!hitAny) S.events.push({t:'whiff'});
+    if(!dy) for(const e of S.ens){ if(!e.alive||e.type==='heli') continue; if(e.x>=x0-8&&e.x<=x1+8){ e.hp-=f.atk>=1.4?2:1; hitAny=true; S.events.push({t:'hit'}); if(e.hp<=0) killEn(S,e); else addFx(S,'spark',e.x,e.y-8,0); } }
   }
+  /* 건물 칸: 제 건물이든 옆 건물이든 손이 닿은 칸을 친다. 라이언은 한 칸 더 */
+  if(hitPoint(S,hx,hy,f.atk*2)) hitAny=true;
+  if(reach>1){ const tx=dy?hx:hx+dx*CELL_W, ty=dy?hy+dy*FLOOR:hy; if(hitPoint(S,tx,ty,f.atk*2)) hitAny=true; }
+  /* 손이 닿는 헬기 */
+  for(const e of S.ens){ if(!e.alive||e.type!=='heli') continue; if(Math.abs(e.x-hx)<16+reach*8&&Math.abs(e.y-hy)<16){ killEn(S,e); hitAny=true; } }
+  if(!hitAny) S.events.push({t:'whiff'});
 }
+/* 손끝 자리의 건물 칸을 찾아 친다. 건물 사이 틈(8px)은 가까운 건물로 본다 */
+function hitPoint(S,x,y,atk){ const b=buildNear(S,x,4); if(!b) return 0; const at=cellAt(b,clamp(x,b.x+1,b.x+b.w-1),y); if(!at) return 0; return hitCell(S,b,at.r,at.c,atk); }
 function killEn(S,e){ e.alive=false; const d=EN[e.type]; S.score+=d.score; S.events.push({t:'kill',type:e.type}); addFx(S,e.type==='heli'||e.type==='tank'?'boom':'spark',e.x,e.y-8,0);
   if(d.edible&&S.hero.shrinkT===0){ eat(S,d.score,d.stam,d.name); S.events.push({t:'eat',what:e.type}); } }
 
@@ -208,20 +227,26 @@ function stepWorld(S){
 }
 function shoot(S,x,y,tx,ty,spd,kind,dmg){ const dx=tx-x, dy=ty-y, L=Math.hypot(dx,dy)||1; S.shots.push({x,y,vx:dx/L*spd,vy:dy/L*spd,kind,dmg,t:0}); S.events.push({t:'shot',kind}); }
 
-/* 손가락·마우스로 찍은 자리로 가는 자동 조종: 찍은 곳이 괴물 자신이면 주먹, 건물 위쪽이면 그 건물로 걸어가 오른다 */
+/* 손가락·마우스로 찍은 자리로 가는 자동 조종: 찍은 곳이 괴물 자신이면 주먹, 건물이면 그 건물로 걸어가 오른다.
+   매달린 채 옆 건물을 찍으면 가장자리까지 가서 뛰어 건너고, 지붕 위를 찍으면 꼭대기를 넘어 올라선다 */
 function autoKeys(S,target,k){
   k.left=k.right=k.up=k.down=false; if(!target) return k;
-  const h=S.hero; const dx=target.x-h.x;
-  if(h.state==='ground'){ const b=buildAt(S,target.x);
-    if(b&&target.y<GROUND-12&&h.x>b.x+8&&h.x<b.x+b.w-8){ k.up=true; }
-    else if(Math.abs(dx)>4){ if(dx<0) k.left=true; else k.right=true; } else target.done=true; }
+  const h=S.hero; const dx=target.x-h.x; const tb=buildNear(S,target.x,4);
+  const toward=()=>{ if(dx<0) k.left=true; else k.right=true; };
+  if(h.state==='ground'){
+    if(tb&&target.y<GROUND-12){ if(h.x>=tb.x-4&&h.x<=tb.x+tb.w+4) k.up=true; else toward(); }
+    else if(Math.abs(dx)>4) toward(); else target.done=true; }
   else if(h.state==='climb'){ const b=S.builds[h.bld];
-    if(target.y>=GROUND-8&&(target.x<b.x-4||target.x>b.x+b.w+4)){ k.down=true; }
-    else if(target.x<b.x-4||target.x>b.x+b.w+4){ /* 다른 건물: 옆으로 손을 놓고 뛰어내린다 */ if(dx<0) k.left=true; else k.right=true; }
-    else { if(Math.abs(dx)>4){ if(dx<0) k.left=true; else k.right=true; } const dy=target.y-(h.y-HAND); if(Math.abs(dy)>4){ if(dy<0) k.up=true; else k.down=true; } if(Math.abs(dx)<=4&&Math.abs(dy)<=4) target.done=true; } }
-  else if(h.hang>1.5){ if(Math.abs(dx)>6){ if(dx<0) k.left=true; else k.right=true; } }
+    if(target.y>=GROUND-8){ k.down=true; }
+    else if(!tb||tb.i!==b.i){ /* 다른 건물·빈 하늘: 가장자리에 붙은 뒤 그쪽으로 뛴다 */ toward(); if(h.side===(dx<0?-1:1)) k.jumpPressed=true; }
+    else if(target.y<topY(b)-2){ k.up=true; }
+    else { if(Math.abs(dx)>4) toward(); const dy=target.y-(h.y-HAND); if(Math.abs(dy)>4){ if(dy<0) k.up=true; else k.down=true; } if(Math.abs(dx)<=4&&Math.abs(dy)<=4) target.done=true; } }
+  else if(h.state==='roof'){ const b=S.builds[h.bld];
+    if(tb&&tb.i===b.i&&target.y>topY(b)+4){ k.down=true; }
+    else if(Math.abs(dx)>4) toward(); else target.done=true; }
+  else if(h.hang>1.5){ if(Math.abs(dx)>6) toward(); }
   return k;
 }
 
-root.Engine={W,H,GROUND,FLOOR,BW,SLOT,COLS,CELL_W,HAND,MAX_STAM,DRAIN_EVERY,EAT_KINDS,FORMS,CITIES,EN,SCORE,newGame,loadCity,nextCity,step,autoKeys,form,cityOf,topY,buildAt,cellAt,heroBox,rng};
+root.Engine={W,H,GROUND,FLOOR,BW,SLOT,COLS,CELL_W,HAND,MAX_STAM,DRAIN_EVERY,EAT_KINDS,FORMS,CITIES,EN,SCORE,newGame,loadCity,nextCity,step,autoKeys,form,cityOf,topY,buildAt,buildNear,cellAt,heroBox,rng,EDGE};
 })(typeof window!=='undefined'?window:module.exports);
