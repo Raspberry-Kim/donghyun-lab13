@@ -56,7 +56,7 @@ function render(g,S,t){
   const h=S.hero; if(h.state!=='climb'){ g.fillStyle='rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(h.x,(h.state==='roof'?h.y:GROUND)-1,10,2,0,0,Math.PI*2); g.fill(); }
   SP.drawMonster(g,E.form(S),h,t,h.x,h.y);
   for(const s of S.shots) SP.shot(g,s);
-  for(const x of S.fx){ if(x.k==='quake') continue; SP.fx(g,x); }
+  for(const x of S.fx){ if(x.k==='quake') continue; if(x.k==='chunk'){ const c=WALLS[(x.n||0)%WALLS.length]; x.wall=(x.sz===3)?c.wall:c.wall2; } SP.fx(g,x); }
   hud(g,S,t);
 }
 root.Render={render,WALLS};

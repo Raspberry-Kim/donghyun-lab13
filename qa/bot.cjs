@@ -1,4 +1,4 @@
-// 무작위·규칙 혼합 봇: 건물을 찾아 올라가 창을 차례로 치며 도시를 부순다. 멈춤·값 깨짐이 없는지 본다.
+// 규칙 봇: 건물의 왼쪽 옆벽에 붙어 창을 위층부터 차례로 치며 도시를 부순다. 멈춤·값 깨짐이 없는지 본다.
 const E=require('../src/engine.js').Engine; const assert=require('assert');
 function play(formId,seed,maxFrames){
   const S=E.newGame({form:formId,seed}); const k={left:false,right:false,up:false,down:false,jump:false,jumpPressed:false,punch:false,punchPressed:false};
@@ -8,17 +8,18 @@ function play(formId,seed,maxFrames){
     const h=S.hero; k.left=k.right=k.up=k.down=k.jumpPressed=k.punchPressed=false;
     const b=S.builds.find(b=>b.state==='up');
     if(b){
-      const H=E.HAND;
-      // 남은 칸 중 하나를 고른다(위층부터). 1층(r=0)은 길에서 친다
-      let found=null; for(let r=b.floors-1;r>=0&&!found;r--) for(let c=0;c<E.COLS;c++){ const cell=b.cells[r][c]; if(cell.hp>0||cell.person){ found={r,c}; break; } }
-      if(!found){ if(h.state==='climb') k.jumpPressed=true; }
-      else {
-        const tx=b.x+found.c*E.CELL_W+E.CELL_W/2;
-        if(found.r===0){ if(h.state==='climb'){ k.down=true; } else if(h.state==='ground'){ const sx=tx-10*(h.dir||1); const want=tx<h.x?tx+12:tx-12; if(Math.abs(h.x-want)>2){ if(h.x<want) k.right=true; else k.left=true; } else { if(tx>h.x) h.dir=1; else h.dir=-1; if(h.punchT<=0&&h.eatT<=0){ k.punchPressed=true; punches++; } } } }
-        else if(h.state==='ground'){ const cx=b.x+b.w/2; if(Math.abs(h.x-cx)>6){ if(h.x<cx) k.right=true; else k.left=true; } else k.up=true; }
-        else if(h.state==='climb'){ const bb=S.builds[h.bld]; if(bb!==b){ k.down=true; }
-          else { const ty=E.GROUND-found.r*E.FLOOR-E.FLOOR/2+H; if(Math.abs(h.y-ty)>3){ if(h.y>ty) k.up=true; else k.down=true; }
-            else { const want=tx<h.x?tx+10:tx-10; if(Math.abs(h.x-want)>4){ if(h.x<want) k.right=true; else k.left=true; } else { h.dir=tx>h.x?1:-1; if(h.punchT<=0&&h.eatT<=0){ k.punchPressed=true; punches++; } } } } }
+      /* 왼쪽 옆벽에 붙어 0열을 위층부터 친다. 0열이 모두 구멍이면(절반) 무너진다. 1층은 맨 아래에서 아래 주먹 */
+      let found=null; for(let r=b.floors-1;r>=0&&!found;r--){ const cell=b.cells[r][0]; if(cell.hp>0||cell.person) found={r}; }
+      if(!found){ if(h.state==='climb'){ k.down=true; } }
+      else if(h.state==='ground'){ const ex=b.x; if(Math.abs(h.x-ex)>2){ if(h.x<ex) k.right=true; else k.left=true; } else k.up=true; }
+      else if(h.state==='roof'){ k.down=true; }
+      else if(h.state==='climb'){
+        if(h.bld!==b.i){ k.down=true; }
+        else {
+          const ty=found.r===0?E.GROUND-4:E.GROUND-found.r*E.FLOOR+6; /* 가운데 주먹이 r층에 닿는 높이 */
+          if(Math.abs(h.y-ty)>1.5){ if(h.y>ty) k.up=true; else k.down=true; }
+          else if(h.punchT<=0&&h.eatT<=0){ if(h.dir!==-h.side) k.right=true; /* 제 건물 쪽을 본다 */ if(found.r===0) k.down=true; k.punchPressed=true; punches++; }
+        }
       }
     }
     const e0=S.hero.eats||0; E.step(S,k); if((S.hero.eats||0)>e0) eats++;

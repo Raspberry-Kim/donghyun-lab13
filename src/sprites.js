@@ -48,10 +48,10 @@ function poseOf(h,t,f){
   const P={arm:[A(5,14),A(-5,14)],leg:[[3,0],[-3,0]],body:0,head:0,mouth:0,eyes:'open',item:null,back:false,extra:[],lean:0,sh,my,HG};
   const walk=Math.sin(t/4), w2=Math.sin(t/4+Math.PI);
   if(h.shrinkT>0) return P;
-  if(h.state==='climb'){ P.back=true; const c=Math.floor(h.climbT/8)%2; /* 벽을 안고 오른다: 팔은 번갈아 위로 */
-    P.arm=[A(9,c?-14:-6),A(-9,c?-6:-14)]; P.leg=[[5,c?-4:0],[-5,c?0:-4]];
-    if(h.punchT>0){ P.back=false; const k=1-h.punchT/16; const ext=k<0.6?k/0.6:1-(k-0.6)/0.4*0.4; P.arm=[punchArm(A,h,ext,20),A(-6,10)]; P.mouth=0.4; P.leg=[[5,-2],[-5,0]]; }
-    else if(h.side){ /* 옆벽에 붙어 있다: 두 팔로 모서리를 안는다 */ const inward=-h.side; P.arm=[A(inward*6,c?-12:-6),A(inward*9,c?-6:-12)]; P.lean=-inward*2; }
+  if(h.state==='climb'){ /* 옆벽에 붙어 오른다: 몸은 바라보는 쪽, 두 손은 벽 모서리를 번갈아 잡는다 */
+    const c=Math.floor(h.climbT/8)%2; const inw=-(h.side||1)*(h.dir||1); /* 바라보는 기준으로 벽이 있는 쪽(+1 앞, -1 뒤) */
+    P.arm=[A(inw*8,c?-14:-6),A(inw*5,c?-6:-14)]; P.leg=[[inw*4,c?-4:0],[inw*1,c?0:-4]]; P.lean=inw*2;
+    if(h.punchT>0){ const k=1-h.punchT/16; const ext=k<0.6?k/0.6:1-(k-0.6)/0.4*0.4; P.arm=[punchArm(A,h,ext,20),A(inw>0?-6:6,-8)]; P.mouth=0.4; P.leg=[[inw*4,-2],[inw*1,0]]; P.lean=0; }
   } else if(h.state==='air'){ const fly=h.hang>1.5; P.arm=fly?[A(9,-6),A(-9,-6)]:[A(8,-8),A(-6,0)]; P.leg=fly?[[3,2],[-3,2]]:[[5,-3],[-4,1]]; P.mouth=0.3; P.eyes=fly?'open':'wide'; }
   else { /* 땅 */
     if(h.punchT>0){ const k=1-h.punchT/16; const ext=k<0.5?k/0.5:1-(k-0.5)/0.5*0.5; P.arm=[punchArm(A,h,ext,22),A(-6,10)]; P.lean=h.pdy?0:Math.round(ext*3); P.mouth=0.6; P.leg=[[5,0],[-4,0]]; }
@@ -243,7 +243,10 @@ function shot(g,s){ if(s.kind==='bullet') px(g,s.x-1,s.y-1,2,2,C.bullet); else i
 function fx(g,x){ const a=x.t;
   if(x.k==='dust'){ for(let i=0;i<5;i++){ const ang=i*1.26+x.x*0.1; const r=a*0.8+2; px(g,x.x+Math.cos(ang)*r-1,x.y+Math.sin(ang)*r*0.6-a*0.3,3-(a>10?1:0),2,i%2?C.dust:C.dust2); } }
   else if(x.k==='spark'){ for(let i=0;i<4;i++){ const ang=i*1.57+0.5; px(g,x.x+Math.cos(ang)*a*0.9,x.y+Math.sin(ang)*a*0.9,2,1,C.spark); } }
-  else if(x.k==='boom'){ const r=Math.min(14,a*1.2); blob(g,x.x,x.y,r,r*0.8,a<10?C.boom2:C.boom); if(a>6) blob(g,x.x,x.y-2,r*0.5,r*0.4,a<16?C.boom:C.dust2); } }
+  else if(x.k==='boom'){ const r=Math.min(14,a*1.2); blob(g,x.x,x.y,r,r*0.8,a<10?C.boom2:C.boom); if(a>6) blob(g,x.x,x.y-2,r*0.5,r*0.4,a<16?C.boom:C.dust2); }
+  else if(x.k==='cloud'){ /* 분진: 커지며 옅어지는 뭉게구름 */ const r=4+a*0.45, al=Math.max(0,1-a/44); g.save(); g.globalAlpha=al*0.85; blob(g,x.x,x.y-a*0.35,r,r*0.7,C.dust); g.globalAlpha=al*0.6; blob(g,x.x-r*0.5,x.y-a*0.25+2,r*0.6,r*0.45,C.dust2); blob(g,x.x+r*0.55,x.y-a*0.4,r*0.55,r*0.4,'#e8dfcc'); g.restore(); }
+  else if(x.k==='chunk'){ /* 벽돌 조각 */ const col=(x.wall||C.dust2); const sz=x.sz||2; px(g,x.x,x.y-sz,sz,sz,col); if(sz>2) px(g,x.x,x.y-sz,1,1,'#fff6'); }
+  else if(x.k==='glass'){ /* 유리 조각 */ px(g,x.x,x.y-1,1,1,(a>>1)&1?'#d8f1fa':'#7eb6cc'); } }
 
 root.Sprites={C,px,blob,limb,person,drawMonster,drawIdle,poseOf,soldier,car,tank,heli,shot,fx};
 })(typeof window!=='undefined'?window:module.exports);
