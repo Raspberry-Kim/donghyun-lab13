@@ -51,7 +51,7 @@ function poseOf(h,t,f){
   if(h.state==='climb'){ /* 옆벽에 붙어 오른다: 몸은 바라보는 쪽, 두 손은 벽 모서리를 번갈아 잡는다 */
     const c=Math.floor(h.climbT/8)%2; const inw=-(h.side||1)*(h.dir||1); /* 바라보는 기준으로 벽이 있는 쪽(+1 앞, -1 뒤) */
     P.arm=[A(inw*8,c?-14:-6),A(inw*5,c?-6:-14)]; P.leg=[[inw*4,c?-4:0],[inw*1,c?0:-4]]; P.lean=inw*2;
-    if(h.punchT>0){ const k=1-h.punchT/16; const ext=k<0.6?k/0.6:1-(k-0.6)/0.4*0.4; P.arm=[punchArm(A,h,ext,20),A(inw>0?-6:6,-8)]; P.mouth=0.4; P.leg=[[inw*4,-2],[inw*1,0]]; P.lean=0; }
+    if(h.punchT>0){ const k=1-h.punchT/16; const ext=k<0.6?k/0.6:1-(k-0.6)/0.4*0.4; P.arm=[punchArm(A,h,ext,(h.pdx||h.dir)===h.side?34:20),A(inw>0?-6:6,-8)]; /* 옆 건물 쪽은 골목 너머까지 팔을 뻗는다 */ P.mouth=0.4; P.leg=[[inw*4,-2],[inw*1,0]]; P.lean=0; }
   } else if(h.state==='air'){ const fly=h.hang>1.5; P.arm=fly?[A(9,-6),A(-9,-6)]:[A(8,-8),A(-6,0)]; P.leg=fly?[[3,2],[-3,2]]:[[5,-3],[-4,1]]; P.mouth=0.3; P.eyes=fly?'open':'wide'; }
   else { /* 땅 */
     if(h.punchT>0){ const k=1-h.punchT/16; const ext=k<0.5?k/0.5:1-(k-0.5)/0.5*0.5; P.arm=[punchArm(A,h,ext,22),A(-6,10)]; P.lean=h.pdy?0:Math.round(ext*3); P.mouth=0.6; P.leg=[[5,0],[-4,0]]; }

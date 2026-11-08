@@ -3,7 +3,7 @@
    그림·소리와 떨어진 순수 상태 기계라 node에서도 돈다. 난수는 상태 안의 rs 하나로만 돌려 저장·복원이 그대로 된다. */
 (function(root){
 'use strict';
-const W=320, H=200, GROUND=176, FLOOR=16, BW=40, SLOT=48, COLS=2, CELL_W=BW/COLS, HAND=14, WALL_TOP=16, FX_MAX=180; /* 손은 발에서 14px 위. 옆벽의 가장 높은 자리는 꼭대기에서 16px 아래(거기서 가운데 주먹이 꼭대기 층에 닿는다) */
+const W=320, H=200, GROUND=176, FLOOR=16, BW=40, GAP=24, SLOT=BW+GAP, COLS=2, CELL_W=BW/COLS, HAND=14, WALL_TOP=16, FX_MAX=180; /* 건물 사이 골목 24px: 괴물이 서서 어느 쪽 벽을 탈지 고를 수 있다(원작도 건물 사이에 골목이 있다). */ /* 손은 발에서 14px 위. 옆벽의 가장 높은 자리는 꼭대기에서 16px 아래(거기서 가운데 주먹이 꼭대기 층에 닿는다) */
 const MAX_STAM=100, DRAIN_EVERY=240; /* 4초에 1칸: 가만히 있어도 6~7분은 버틴다. 맞아도 조금만 깎이고 먹으면 크게 차서 거의 가득 찬 채로 논다 */
 const FORMS=[
   {id:1,key:'podong',name:'포동이',from:'실험실의 강아지',color:'#f6ecd6',atk:1.0,def:1.0,reach:1,speed:1.0,hang:1.0,
@@ -18,18 +18,18 @@ const FORMS=[
    desc:'힘 150%에 맷집 140%로 둘 다 세다. 대신 무거워서 걷고 오르는 것이 느리다(75%).'}
 ];
 const CITIES=[
-  {name:'인천',nB:4,hMin:4,hMax:6,soldier:1,heli:0,tank:0,car:1,sky:['#7fb5e6','#dbe9f5'],fog:'#9fb9cf'},
-  {name:'서울',nB:5,hMin:4,hMax:7,soldier:1,heli:0,tank:0,car:1,sky:['#6aa3dc','#d6e6f3'],fog:'#93aec7'},
-  {name:'수원',nB:5,hMin:5,hMax:7,soldier:2,heli:1,tank:0,car:1,sky:['#f0b27a','#fbe3c4'],fog:'#d3a07e'},
-  {name:'춘천',nB:5,hMin:4,hMax:8,soldier:2,heli:1,tank:0,car:2,sky:['#86c0a6','#dff0e3'],fog:'#9fc3af'},
-  {name:'강릉',nB:6,hMin:5,hMax:8,soldier:2,heli:1,tank:1,car:2,sky:['#5f8fcc','#cfe0f2'],fog:'#8aa6c6'},
-  {name:'대전',nB:6,hMin:5,hMax:8,soldier:3,heli:1,tank:1,car:2,sky:['#c98fd2','#efdcf2'],fog:'#b596bd'},
-  {name:'전주',nB:6,hMin:5,hMax:9,soldier:3,heli:2,tank:1,car:2,sky:['#e58f6e','#f8d9c6'],fog:'#cf9a84'},
-  {name:'광주',nB:6,hMin:6,hMax:9,soldier:3,heli:2,tank:1,car:3,sky:['#4f6fa8','#b7c8e2'],fog:'#7f93b5'},
-  {name:'대구',nB:6,hMin:6,hMax:9,soldier:4,heli:2,tank:2,car:3,sky:['#ec8a5a','#f6d2b5'],fog:'#d59b7c'},
-  {name:'울산',nB:6,hMin:6,hMax:9,soldier:4,heli:2,tank:2,car:3,sky:['#3f5d8c','#9fb3cf'],fog:'#6f85a6'},
-  {name:'부산',nB:6,hMin:7,hMax:9,soldier:4,heli:3,tank:2,car:3,sky:['#2f4f7f','#8da4c4'],fog:'#5f779c'},
-  {name:'제주',nB:6,hMin:7,hMax:9,soldier:5,heli:3,tank:3,car:3,sky:['#1f2f55','#6f7fa6'],fog:'#4a5a80'}
+  {name:'인천',nB:3,hMin:3,hMax:6,soldier:1,heli:0,tank:0,car:1,sky:['#7fb5e6','#dbe9f5'],fog:'#9fb9cf'},
+  {name:'서울',nB:4,hMin:3,hMax:7,soldier:1,heli:0,tank:0,car:1,sky:['#6aa3dc','#d6e6f3'],fog:'#93aec7'},
+  {name:'수원',nB:4,hMin:4,hMax:7,soldier:2,heli:1,tank:0,car:1,sky:['#f0b27a','#fbe3c4'],fog:'#d3a07e'},
+  {name:'춘천',nB:4,hMin:3,hMax:8,soldier:2,heli:1,tank:0,car:2,sky:['#86c0a6','#dff0e3'],fog:'#9fc3af'},
+  {name:'강릉',nB:5,hMin:4,hMax:8,soldier:2,heli:1,tank:1,car:2,sky:['#5f8fcc','#cfe0f2'],fog:'#8aa6c6'},
+  {name:'대전',nB:5,hMin:4,hMax:8,soldier:3,heli:1,tank:1,car:2,sky:['#c98fd2','#efdcf2'],fog:'#b596bd'},
+  {name:'전주',nB:5,hMin:5,hMax:9,soldier:3,heli:2,tank:1,car:2,sky:['#e58f6e','#f8d9c6'],fog:'#cf9a84'},
+  {name:'광주',nB:5,hMin:5,hMax:9,soldier:3,heli:2,tank:1,car:3,sky:['#4f6fa8','#b7c8e2'],fog:'#7f93b5'},
+  {name:'대구',nB:5,hMin:5,hMax:9,soldier:4,heli:2,tank:2,car:3,sky:['#ec8a5a','#f6d2b5'],fog:'#d59b7c'},
+  {name:'울산',nB:5,hMin:6,hMax:9,soldier:4,heli:2,tank:2,car:3,sky:['#3f5d8c','#9fb3cf'],fog:'#6f85a6'},
+  {name:'부산',nB:5,hMin:6,hMax:9,soldier:4,heli:3,tank:2,car:3,sky:['#2f4f7f','#8da4c4'],fog:'#5f779c'},
+  {name:'제주',nB:5,hMin:6,hMax:9,soldier:5,heli:3,tank:3,car:3,sky:['#1f2f55','#6f7fa6'],fog:'#4a5a80'}
 ];
 const EN={
   soldier:{name:'군인',hp:1,score:150,stam:14,edible:true,dmg:1},
@@ -46,10 +46,13 @@ const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 function form(S){ return FORMS[S.formI]; }
 
 function makeCity(S,ci){
-  const C=CITIES[(ci-1)%CITIES.length], nB=C.nB, x0=Math.floor((W-(nB*SLOT-8))/2);
+  const C=CITIES[(ci-1)%CITIES.length], nB=C.nB, x0=Math.floor((W-(nB*SLOT-GAP))/2);
   const builds=[];
   for(let i=0;i<nB;i++){
-    const floors=ri(S,C.hMin,C.hMax+Math.min(2,Math.floor((ci-1)/CITIES.length)));
+    const hMax=C.hMax+Math.min(2,Math.floor((ci-1)/CITIES.length));
+    let floors=ri(S,C.hMin,hMax);
+    /* 옆 건물과 두 층 이상 차이 나게: 높낮이가 들쭉날쭉해야 어느 건물에 붙었는지 한눈에 보인다 */
+    if(i>0){ const prev=builds[i-1].floors; if(Math.abs(floors-prev)<2){ floors=prev+2<=hMax?prev+2:prev-2; if(floors<C.hMin) floors=C.hMin; if(floors>hMax) floors=hMax; } }
     const cells=[]; for(let r=0;r<floors;r++){ const row=[]; for(let c=0;c<COLS;c++) row.push({hp:3,person:0}); cells.push(row); }
     builds.push({i,x:x0+i*SLOT,w:BW,floors,cells,state:'up',fall:0,drop:0,tint:ri(S,0,3),holes:0});
   }
@@ -145,7 +148,7 @@ function step(S,k){
         h.y=clamp(h.y,top+WALL_TOP,GROUND-4);
         /* 맨 아래에서 ↓를 잠시 누르고 있으면 내려선다. 짧게 ↓+Z는 길을 향한 아래 주먹 */
         if(h.y>=GROUND-4&&k.down&&h.punchT<=0&&!k.punchPressed){ h.downT=(h.downT||0)+1; if(h.downT>=10){ h.downT=0; h.state='ground'; h.y=GROUND; h.bld=-1; h.side=0; S.events.push({t:'land'}); } } else h.downT=0;
-        if(h.state==='climb'&&k.jumpPressed){ /* 매달린 채 뛰기: 바라보는 쪽으로 짧게. 옆 건물 쪽이면 그 옆벽을 잡고, 제 건물 쪽이면 건너편 옆벽·지붕으로 */ const dx=k.left?-1:k.right?1:h.dir; h.state='air'; h.vy=-2.8; h.vx=dx*1.1; h.dir=dx; h.from={bld:h.bld,side:h.side}; h.airT=0; h.bld=-1; h.side=0; S.events.push({t:'jump'}); }
+        if(h.state==='climb'&&k.jumpPressed){ /* 매달린 채 뛰기: 바라보는 쪽으로 짧게. 옆 건물 쪽이면 그 옆벽을 잡고, 제 건물 쪽이면 건너편 옆벽·지붕으로 */ const dx=k.left?-1:k.right?1:h.dir; h.state='air'; h.vy=-2.8; h.vx=dx*1.3; h.dir=dx; h.from={bld:h.bld,side:h.side}; h.airT=0; h.bld=-1; h.side=0; S.events.push({t:'jump'}); }
       }
     }
   } else if(h.state==='roof'){
@@ -174,7 +177,7 @@ function step(S,k){
 }
 /* 옆벽에 붙는다: side=-1 왼쪽 옆벽, +1 오른쪽 옆벽. 발은 벽면 모서리 위에 둔다 */
 function grab(S,b,side,y){ const h=S.hero; h.state='climb'; h.bld=b.i; h.side=side; h.x=b.x+(side>0?b.w:0); h.y=clamp(y,topY(b)+WALL_TOP,GROUND-4); h.dir=-side; h.from=null; S.events.push({t:'grab'}); }
-/* x에서 가장 가까운 옆벽(건물 모서리). 틈(8px)에 서면 더 가까운 쪽 */
+/* x에서 가장 가까운 옆벽(건물 모서리). 골목(24px)에 서면 더 가까운 쪽 */
 function wallNear(S,x,tol){ let best=null,bd=1e9; for(const b of S.builds){ if(b.state!=='up') continue; for(const side of [-1,1]){ const ex=b.x+(side>0?b.w:0); const d=Math.abs(x-ex); if(d<=tol&&d<bd){ best={b,side,ex}; bd=d; } } } return best; }
 function stomp(S,b){ const f=form(S); const r=b.floors-1; for(let c=0;c<COLS;c++) hitCell(S,b,r,c,f.atk*2); addFx(S,'quake',0,0,0); S.events.push({t:'stomp',i:b.i}); }
 function checkClear(S){ const h=S.hero; if(S.builds.every(b=>b.state==='gone')&&S.status==='play'){ S.cleared=1; S.citiesDone++; S.score+=SCORE.city+Math.round(h.stam)*10;
@@ -183,8 +186,9 @@ function punch(S){
   const h=S.hero, f=form(S), reach=f.reach, dx=h.pdx||h.dir, dy=h.pdy||0, atk=f.atk*2;
   const hy=h.y-HAND+dy*FLOOR; /* 가운데는 손 높이, 위·아래는 한 층 위·아래 */
   let hitAny=false;
-  const sweepRoad=()=>{ const range=16+reach*18; const x0=Math.min(h.x,h.x+dx*range), x1=Math.max(h.x,h.x+dx*range);
-    for(const e of S.ens){ if(!e.alive||e.type==='heli') continue; if(e.x>=x0-8&&e.x<=x1+8){ e.hp-=f.atk>=1.4?2:1; hitAny=true; S.events.push({t:'hit'}); if(e.hp<=0) killEn(S,e); else addFx(S,'spark',e.x,e.y-8,0); } } };
+  /* 길의 군인·차·전차: 보는 쪽으로 손 한 뼘 반, 등 뒤로도 조금. 기물 폭(군인 10 · 차 28 · 전차 34)만큼 더 넓게 인정한다 */
+  const sweepRoad=()=>{ const range=30+reach*20; const x0=Math.min(h.x-10,h.x+dx*range), x1=Math.max(h.x+10,h.x+dx*range);
+    for(const e of S.ens){ if(!e.alive||e.type==='heli') continue; const hw=e.type==='soldier'?5:e.type==='tank'?17:14; if(e.x+hw>=x0&&e.x-hw<=x1){ e.hp-=f.atk>=1.4?2:1; hitAny=true; S.events.push({t:'hit'}); if(e.hp<=0) killEn(S,e); else addFx(S,'spark',e.x,e.y-8,0); } } };
   if(h.state==='climb'){
     const b=S.builds[h.bld]; if(!b||b.state!=='up') return;
     const r=Math.floor((GROUND-hy)/FLOOR);
@@ -192,10 +196,10 @@ function punch(S){
       if(dx===-h.side){ /* 제 건물 쪽: 붙은 모서리의 칸부터 */ const c0=h.side<0?0:COLS-1; if(r<b.floors){ if(hitCell(S,b,r,c0,atk)) hitAny=true; if(reach>1){ const c1=c0-h.side; if(c1>=0&&c1<COLS&&hitCell(S,b,r,c1,atk)) hitAny=true; } } }
       else { /* 옆 건물 쪽: 틈 너머 가까운 칸부터 */ const nb=S.builds.find(o=>o.state==='up'&&o.i===b.i+h.side); if(nb&&r<nb.floors){ const c0=h.side>0?0:COLS-1; if(hitCell(S,nb,r,c0,atk)) hitAny=true; if(reach>1){ const c1=c0+h.side; if(c1>=0&&c1<COLS&&hitCell(S,nb,r,c1,atk)) hitAny=true; } } }
     }
-    /* 맨 아래에서 아래로 치면(손이 1층 높이) 길의 차·군인·전차도 맞는다 */
-    if(r<=0&&dy>0) sweepRoad();
+    /* 아래 두 층에서 아래로 치면 길의 차·군인·전차도 맞는다 */
+    if(r<=1&&dy>0) sweepRoad();
   } else if(h.state==='ground'){
-    if(!dy) sweepRoad();
+    if(dy>=0) sweepRoad();
     if(hitPoint(S,h.x+dx*10,hy,atk)) hitAny=true; if(reach>1&&hitPoint(S,h.x+dx*(10+CELL_W),hy,atk)) hitAny=true;
   } else if(h.state==='roof'){
     if(hitPoint(S,h.x+dx*10,hy,atk)) hitAny=true; if(reach>1&&hitPoint(S,h.x+dx*(10+CELL_W),hy,atk)) hitAny=true;
@@ -270,5 +274,5 @@ function autoKeys(S,target,k){
   return k;
 }
 
-root.Engine={W,H,GROUND,FLOOR,BW,SLOT,COLS,CELL_W,HAND,MAX_STAM,DRAIN_EVERY,EAT_KINDS,FORMS,CITIES,EN,SCORE,newGame,loadCity,nextCity,step,autoKeys,form,cityOf,topY,buildAt,buildNear,wallNear,cellAt,heroBox,rng,WALL_TOP};
+root.Engine={W,H,GROUND,FLOOR,BW,GAP,SLOT,COLS,CELL_W,HAND,MAX_STAM,DRAIN_EVERY,EAT_KINDS,FORMS,CITIES,EN,SCORE,newGame,loadCity,nextCity,step,autoKeys,form,cityOf,topY,buildAt,buildNear,wallNear,cellAt,heroBox,rng,WALL_TOP};
 })(typeof window!=='undefined'?window:module.exports);
