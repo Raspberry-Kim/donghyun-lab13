@@ -53,7 +53,7 @@ function makeCity(S,ci){
     let floors=ri(S,C.hMin,hMax);
     /* 옆 건물과 두 층 이상 차이 나게: 높낮이가 들쭉날쭉해야 어느 건물에 붙었는지 한눈에 보인다 */
     if(i>0){ const prev=builds[i-1].floors; if(Math.abs(floors-prev)<2){ floors=prev+2<=hMax?prev+2:prev-2; if(floors<C.hMin) floors=C.hMin; if(floors>hMax) floors=hMax; } }
-    const cells=[]; for(let r=0;r<floors;r++){ const row=[]; for(let c=0;c<COLS;c++) row.push({hp:3,person:0}); cells.push(row); }
+    const cells=[]; for(let r=0;r<floors;r++){ const row=[]; for(let c=0;c<COLS;c++) row.push({hp:3,person:0,cut:0}); cells.push(row); }
     builds.push({i,x:x0+i*SLOT,w:BW,floors,cells,state:'up',fall:0,drop:0,tint:ri(S,0,3),holes:0});
   }
   return {C,builds};
@@ -69,13 +69,13 @@ function newGame(cfg){
 function loadCity(S){
   const {C,builds}=makeCity(S,S.city); S.builds=builds; S.ens=[]; S.shots=[]; S.fx=[]; S.cleared=0; S.spawnT=90; S.heliT=C.heli?540:1e9; S.carT=160;
   const f=form(S);
-  S.hero={x:W/2,y:GROUND,vx:0,vy:0,dir:1,state:'ground',bld:-1,punchT:0,eatT:0,eatKind:'gulp',eats:S.hero?S.hero.eats||0:0,hurtT:0,stam:S.hero?S.hero.stam:MAX_STAM,shrinkT:0,inv:60,walkT:0,climbT:0,steps:0,hang:f.hang,side:0,pdx:0,pdy:0,airT:0,from:null,downT:0};
+  S.hero={x:W/2,y:GROUND,vx:0,vy:0,dir:1,state:'ground',bld:-1,sitT:0,rideY:0,punchT:0,eatT:0,eatKind:'gulp',eats:S.hero?S.hero.eats||0:0,hurtT:0,stam:S.hero?S.hero.stam:MAX_STAM,shrinkT:0,inv:60,walkT:0,climbT:0,steps:0,hang:f.hang,side:0,pdx:0,pdy:0,airT:0,from:null,downT:0};
   if(S.hero.stam<40) S.hero.stam=40;
   S.events.push({t:'city',city:S.city,name:C.name});
 }
 function nextCity(S){ if(S.status!=='clear') return false; S.city++; S.status='play'; loadCity(S); return true; }
 function cityOf(S){ return CITIES[(S.city-1)%CITIES.length]; }
-function heroBox(h){ return {x:h.x-12,y:h.y-36,w:24,h:36}; }
+function heroBox(h){ return {x:h.x-12,y:h.y-30,w:24,h:30}; }
 function buildAt(S,x){ for(const b of S.builds) if(b.state==='up'&&x>=b.x&&x<=b.x+b.w) return b; return null; }
 function topY(b){ return GROUND-b.floors*FLOOR; }
 /* 틈까지 포함해 가장 가까운 선 건물 */
@@ -86,14 +86,18 @@ function addFx(S,kind,x,y,n){ if(S.fx.length>=FX_MAX) S.fx.shift(); S.fx.push({k
 /* 잔해: 벽돌 조각(chunk)·유리 조각(glass)이 튀어 떨어져 길에 쌓인다. n=건물 번호(색) */
 function debris(S,x,y,bi,count,kind){ for(let i=0;i<count;i++){ if(S.fx.length>=FX_MAX) S.fx.shift(); S.fx.push({k:kind,x:x+ri(S,-6,6),y:y+ri(S,-5,5),t:0,n:bi,vx:(rng(S)-0.5)*(kind==='glass'?3.2:2.4),vy:-(0.6+rng(S)*2.2),sz:kind==='glass'?1:ri(S,2,3),life:ri(S,70,110)}); } }
 
-function hitCell(S,b,r,c,atk){
-  const cell=b.cells[r][c]; if(!cell) return 0;
+/* 칸 하나를 친다. how={dy, from}: dy는 주먹 방향(-1 위·0 앞·+1 아래), from은 주먹이 온 쪽(-1 왼쪽 밖·+1 오른쪽 밖·0 정면).
+   구멍이 나면 깎인 모양을 cell.cut에 비트로 남긴다: 1 구멍 · 2 바깥 모서리까지 터짐(옆벽에서 친 모서리 칸) · 4 아래 바닥판 깨짐(아래 주먹) · 8 위 상인방 깨짐(위 주먹) */
+function cutBits(how,c){ let add=0; if(how.dy>0) add|=4; if(how.dy<0) add|=8; if(how.from&&((how.from<0&&c===0)||(how.from>0&&c===COLS-1))) add|=2; return add; }
+function hitCell(S,b,r,c,atk,how){
+  const cell=b.cells[r][c]; if(!cell) return 0; how=how||{dy:0,from:0};
   let got=0;
   if(cell.person){ cell.person=0; S.score+=SCORE.person; eat(S,SCORE.person,20,'사람'); S.events.push({t:'eat',what:'person',kind:S.hero.eatKind}); got=1; }
-  if(cell.hp<=0) return got;
-  const cx=b.x+c*CELL_W+CELL_W/2, cy=GROUND-r*FLOOR-FLOOR/2; cell.hp-=atk; S.score+=SCORE.punch; S.events.push({t:'hit'}); addFx(S,'dust',cx,cy,0);
+  const cx=b.x+c*CELL_W+CELL_W/2, cy=GROUND-r*FLOOR-FLOOR/2;
+  if(cell.hp<=0){ /* 이미 뚫린 칸을 다시 치면 더 깎인다 */ const add=cutBits(how,c)&~(cell.cut||0); if(add){ cell.cut=(cell.cut||0)|add; debris(S,cx,cy,b.i,3,'chunk'); addFx(S,'dust',cx,cy,0); S.events.push({t:'hit'}); return 1; } return got; }
+  cell.hp-=atk; S.score+=SCORE.punch; S.events.push({t:'hit'}); addFx(S,'dust',cx,cy,0);
   debris(S,cx,cy,b.i,cell.hp<=0?6:3,'glass'); debris(S,cx,cy,b.i,cell.hp<=0?5:2,'chunk');
-  if(cell.hp<=0){ cell.hp=0; b.holes++; S.score+=SCORE.hole; addFx(S,'cloud',cx,cy+4,b.i); if(rng(S)<0.4) cell.person=1;
+  if(cell.hp<=0){ cell.hp=0; b.holes++; S.score+=SCORE.hole; addFx(S,'cloud',cx,cy+4,b.i); if(rng(S)<0.4) cell.person=1; cell.cut=1|cutBits(how,c);
     const total=b.floors*COLS; if(b.holes>=Math.ceil(total*0.5)) collapse(S,b); }
   return 1;
 }
@@ -102,12 +106,16 @@ function eat(S,score,stam,what){ const h=S.hero; h.stam=Math.min(MAX_STAM,h.stam
 function collapse(S,b){ if(b.state!=='up') return; b.state='falling'; b.fall=0; S.score+=SCORE.building; S.events.push({t:'collapse',i:b.i});
   for(let i=0;i<4;i++) addFx(S,'cloud',b.x+ri(S,0,b.w),GROUND-6-ri(S,0,10),b.i); debris(S,b.x+b.w/2,topY(b)+10,b.i,8,'chunk');
   for(const e of S.ens) if(e.type==='soldier'&&e.x>b.x-4&&e.x<b.x+b.w+4){ e.alive=false; S.score+=50; }
-  const h=S.hero; if(h.bld===b.i&&(h.state==='climb'||h.state==='roof')){ h.state='air'; h.vy=0.5; h.vx=0; h.bld=-1; h.side=0; h.hurtT=30; addFx(S,'quake',0,0,0); } }
+  /* 붙어 있던 괴물은 건물과 함께 내려간다(ride). 내려가는 동안 X로 뛰어내리지 않으면 바닥에 주저앉는다(sit) */
+  const h=S.hero; if(h.bld===b.i&&(h.state==='climb'||h.state==='roof')){ h.state='ride'; h.rideY=h.y; addFx(S,'quake',0,0,0); S.events.push({t:'ride'}); } }
 
 function hurt(S,dmg,by){ const h=S.hero; if(h.inv>0||S.status!=='play'||h.shrinkT) return; const f=form(S); const real=Math.max(1,Math.round(dmg/f.def));
   h.stam-=real; h.hurtT=18; h.inv=50; S.events.push({t:'hurt',by,dmg:real});
   if(h.stam<=0){ h.stam=0; h.shrinkT=120; h.state=(h.state==='climb'||h.state==='roof')?'air':h.state; h.vx=0; h.vy=0; h.bld=-1; h.side=0; S.events.push({t:'shrink'}); } }
 
+/* 무너지는 건물과 함께 떨어져 주저앉는다: 잠시 못 움직이고 체력이 깎인다(원작 규칙) */
+function sitDown(S){ const h=S.hero, f=form(S); h.state='sit'; h.y=GROUND; h.bld=-1; h.side=0; h.sitT=70; h.vx=h.vy=0; const real=Math.max(1,Math.round(6/f.def)); h.stam=Math.max(0,h.stam-real); h.hurtT=0; addFx(S,'quake',0,0,0); for(let i=0;i<3;i++) addFx(S,'cloud',h.x+ri(S,-10,10),GROUND-4,0); S.events.push({t:'sit',dmg:real});
+  if(h.stam<=0){ h.shrinkT=120; h.state='ground'; S.events.push({t:'shrink'}); } }
 function spawnSoldier(S){ const side=rng(S)<0.5?-1:1; S.ens.push({type:'soldier',x:side<0?-10:W+10,y:GROUND,dir:-side,hp:1,alive:true,t:0,shootT:ri(S,60,120)}); }
 function spawnCar(S){ const C=cityOf(S); const type=rng(S)<0.5?'cop':'taxi'; const side=rng(S)<0.5?-1:1; S.ens.push({type,x:side<0?-20:W+20,y:GROUND,dir:-side,hp:EN[type].hp,alive:true,t:0,spd:(type==='cop'?1.3:1.0)+C.car*0.1}); }
 function spawnTank(S){ const side=rng(S)<0.5?-1:1; S.ens.push({type:'tank',x:side<0?-24:W+24,y:GROUND,dir:-side,hp:3,alive:true,t:0,shootT:150}); }
@@ -127,7 +135,13 @@ function step(S,k){
   /* 입력 */
   const spd=1.25*f.speed, climbSpd=1.0*f.speed;
   if(h.punchT>0) h.punchT--;
+  if(h.state==='ride'){ /* 무너지는 건물에 매달려 내려가는 중: X로만 뛰어내릴 수 있다(먹던 것도 삼키고 뛴다) */ h.walkT=0; const b=S.builds[h.bld];
+    if(!b||b.state!=='falling'){ sitDown(S); }
+    else if(k.jumpPressed){ const dx=k.left?-1:k.right?1:(h.side?h.side:h.dir); h.eatT=0; h.state='air'; h.vy=-3.2; h.vx=dx*1.5; h.dir=dx; h.from=null; h.airT=0; h.bld=-1; h.side=0; S.events.push({t:'jump'}); }
+    stepWorld(S); checkClear(S); return;
+  }
   if(h.eatT>0&&h.state!=='air'){ /* 먹는 동안은 멈춰 서서 동작을 다 보여 준다 */ if(h.state==='ground') h.y=GROUND; stepWorld(S); checkClear(S); return; }
+  if(h.state==='sit'){ h.walkT=0; if(--h.sitT<=0){ h.state='ground'; h.sitT=0; } stepWorld(S); checkClear(S); return; }
   if(h.state==='ground'){
     h.y=GROUND; h.bld=-1; h.side=0;
     let moved=false; if(h.punchT<=0||h.punchT<6){ if(k.left){ h.x-=spd; h.dir=-1; moved=true; } else if(k.right){ h.x+=spd; h.dir=1; moved=true; } } h.walkT=moved?h.walkT+1:0;
@@ -179,7 +193,7 @@ function step(S,k){
 function grab(S,b,side,y){ const h=S.hero; h.state='climb'; h.bld=b.i; h.side=side; h.x=b.x+(side>0?b.w:0); h.y=clamp(y,topY(b)+WALL_TOP,GROUND-4); h.dir=-side; h.from=null; S.events.push({t:'grab'}); }
 /* x에서 가장 가까운 옆벽(건물 모서리). 골목(24px)에 서면 더 가까운 쪽 */
 function wallNear(S,x,tol){ let best=null,bd=1e9; for(const b of S.builds){ if(b.state!=='up') continue; for(const side of [-1,1]){ const ex=b.x+(side>0?b.w:0); const d=Math.abs(x-ex); if(d<=tol&&d<bd){ best={b,side,ex}; bd=d; } } } return best; }
-function stomp(S,b){ const f=form(S); const r=b.floors-1; for(let c=0;c<COLS;c++) hitCell(S,b,r,c,f.atk*2); addFx(S,'quake',0,0,0); S.events.push({t:'stomp',i:b.i}); }
+function stomp(S,b){ const f=form(S); const r=b.floors-1; for(let c=0;c<COLS;c++) hitCell(S,b,r,c,f.atk*2,{dy:1,from:0}); addFx(S,'quake',0,0,0); S.events.push({t:'stomp',i:b.i}); }
 function checkClear(S){ const h=S.hero; if(S.builds.every(b=>b.state==='gone')&&S.status==='play'){ S.cleared=1; S.citiesDone++; S.score+=SCORE.city+Math.round(h.stam)*10;
     if(S.city>=CITIES.length){ S.status='win'; S.events.push({t:'win'}); } else { S.status='clear'; S.events.push({t:'clear',city:S.city}); } } }
 function punch(S){
@@ -193,24 +207,31 @@ function punch(S){
     const b=S.builds[h.bld]; if(!b||b.state!=='up') return;
     const r=Math.floor((GROUND-hy)/FLOOR);
     if(r>=0){
-      if(dx===-h.side){ /* 제 건물 쪽: 붙은 모서리의 칸부터 */ const c0=h.side<0?0:COLS-1; if(r<b.floors){ if(hitCell(S,b,r,c0,atk)) hitAny=true; if(reach>1){ const c1=c0-h.side; if(c1>=0&&c1<COLS&&hitCell(S,b,r,c1,atk)) hitAny=true; } } }
-      else { /* 옆 건물 쪽: 틈 너머 가까운 칸부터 */ const nb=S.builds.find(o=>o.state==='up'&&o.i===b.i+h.side); if(nb&&r<nb.floors){ const c0=h.side>0?0:COLS-1; if(hitCell(S,nb,r,c0,atk)) hitAny=true; if(reach>1){ const c1=c0+h.side; if(c1>=0&&c1<COLS&&hitCell(S,nb,r,c1,atk)) hitAny=true; } } }
+      if(dx===-h.side){ /* 제 건물 쪽: 붙은 모서리의 칸부터 */ const c0=h.side<0?0:COLS-1; if(r<b.floors){ if(hitArea(S,b,r,c0,atk,{dy,from:h.side},reach)) hitAny=true; } }
+      else { /* 옆 건물 쪽: 골목 너머 가까운 칸부터 */ const nb=S.builds.find(o=>o.state==='up'&&o.i===b.i+h.side); if(nb&&r<nb.floors){ const c0=h.side>0?0:COLS-1; if(hitArea(S,nb,r,c0,atk,{dy,from:-h.side},reach)) hitAny=true; } }
     }
     /* 아래 두 층에서 아래로 치면 길의 차·군인·전차도 맞는다 */
     if(r<=1&&dy>0) sweepRoad();
   } else if(h.state==='ground'){
     if(dy>=0) sweepRoad();
-    if(hitPoint(S,h.x+dx*10,hy,atk)) hitAny=true; if(reach>1&&hitPoint(S,h.x+dx*(10+CELL_W),hy,atk)) hitAny=true;
+    if(hitPoint(S,h.x+dx*10,hy,atk,dy,reach)) hitAny=true;
   } else if(h.state==='roof'){
-    if(hitPoint(S,h.x+dx*10,hy,atk)) hitAny=true; if(reach>1&&hitPoint(S,h.x+dx*(10+CELL_W),hy,atk)) hitAny=true;
+    if(hitPoint(S,h.x+dx*10,hy,atk,dy,reach)) hitAny=true;
   }
   /* 손이 닿는 헬기 */
   const hx=h.x+dx*12;
   for(const e of S.ens){ if(!e.alive||e.type!=='heli') continue; if(Math.abs(e.x-hx)<16+reach*8&&Math.abs(e.y-hy)<16){ killEn(S,e); hitAny=true; } }
   if(!hitAny) S.events.push({t:'whiff'});
 }
-/* 손끝 자리의 건물 칸을 찾아 친다(길·지붕에서). 건물 사이 틈은 가까운 건물로 본다 */
-function hitPoint(S,x,y,atk){ const b=buildNear(S,x,8); if(!b) return 0; const at=cellAt(b,clamp(x,b.x+1,b.x+b.w-1),y); if(!at) return 0; return hitCell(S,b,at.r,at.c,atk); }
+/* 손끝 자리의 건물 칸을 찾아 친다(길·지붕에서). 건물 사이 골목은 가까운 건물로 본다 */
+function hitPoint(S,x,y,atk,dy,reach){ const b=buildNear(S,x,12); if(!b) return 0; const at=cellAt(b,clamp(x,b.x+1,b.x+b.w-1),y); if(!at) return 0; const from=x<b.x?-1:x>b.x+b.w?1:0; return hitArea(S,b,at.r,at.c,atk,{dy:dy||0,from},reach||1); }
+/* 주먹 한 방의 범위: 맞은 칸은 온전히, 같은 층의 옆 칸과 주먹이 지나간 칸은 절반. 라이언(reach 2)은 옆 칸도 온전히, 위아래 칸도 절반 */
+function hitArea(S,b,r,c,atk,how,reach){ let any=0; if(hitCell(S,b,r,c,atk,how)) any=1;
+  const half=atk*0.5, side={dy:0,from:0};
+  for(let cc=0;cc<COLS;cc++){ if(cc===c) continue; if(hitCell(S,b,r,cc,reach>1?atk:half,side)) any=1; }
+  if(how.dy){ /* 지나간 칸: 아래 주먹이면 한 층 위, 위 주먹이면 한 층 아래 */ const rp=r+how.dy; if(rp>=0&&rp<b.floors&&hitCell(S,b,rp,c,half,side)) any=1; }
+  if(reach>1){ for(const rr of [r-1,r+1]) if(rr>=0&&rr<b.floors&&rr!==r+(how.dy||0)&&hitCell(S,b,rr,c,half,side)) any=1; }
+  return any; }
 function killEn(S,e){ e.alive=false; const d=EN[e.type]; S.score+=d.score; S.events.push({t:'kill',type:e.type}); addFx(S,e.type==='heli'||e.type==='tank'?'boom':'spark',e.x,e.y-8,0);
   if(d.edible&&S.hero.shrinkT===0){ eat(S,d.score,d.stam,d.name); S.events.push({t:'eat',what:e.type}); } }
 
@@ -218,6 +239,7 @@ function stepWorld(S){
   const h=S.hero, C=cityOf(S);
   /* 건물 무너짐 */
   for(const b of S.builds){ if(b.state==='falling'){ b.fall++; b.drop=Math.min(b.floors*FLOOR,b.fall*b.fall*0.08);
+      if(h.state==='ride'&&h.bld===b.i){ h.y=Math.min(GROUND,h.rideY+b.drop); if(h.y>=GROUND-1||b.drop>=b.floors*FLOOR) sitDown(S); }
       if(b.fall%3===0){ addFx(S,'cloud',b.x+ri(S,-6,b.w+6),GROUND-4-ri(S,0,8),b.i); debris(S,b.x+(rng(S)<0.5?0:b.w),GROUND-ri(S,0,Math.max(8,b.floors*FLOOR-b.drop)),b.i,2,'chunk'); }
       if(b.drop>=b.floors*FLOOR){ b.state='gone'; S.events.push({t:'gone',i:b.i}); for(let i=0;i<6;i++) addFx(S,'cloud',b.x+ri(S,-10,b.w+10),GROUND-6-ri(S,0,16),b.i); debris(S,b.x+b.w/2,GROUND-12,b.i,14,'chunk'); } } }
   /* 창문의 사람은 잠시 뒤 숨는다 */
@@ -274,5 +296,5 @@ function autoKeys(S,target,k){
   return k;
 }
 
-root.Engine={W,H,GROUND,FLOOR,BW,GAP,SLOT,COLS,CELL_W,HAND,MAX_STAM,DRAIN_EVERY,EAT_KINDS,FORMS,CITIES,EN,SCORE,newGame,loadCity,nextCity,step,autoKeys,form,cityOf,topY,buildAt,buildNear,wallNear,cellAt,heroBox,rng,WALL_TOP};
+root.Engine={W,H,GROUND,FLOOR,BW,GAP,SLOT,COLS,CELL_W,HAND,MAX_STAM,DRAIN_EVERY,EAT_KINDS,FORMS,CITIES,EN,SCORE,newGame,loadCity,nextCity,step,autoKeys,form,cityOf,topY,buildAt,buildNear,wallNear,cellAt,heroBox,rng,WALL_TOP,collapse};
 })(typeof window!=='undefined'?window:module.exports);
