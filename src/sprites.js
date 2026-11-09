@@ -1,5 +1,5 @@
 /* 동현램 그림: 다섯 괴물·사람·군인·차·전차·헬기를 모두 코드로 새로 그린다. 원작 게임의 그림은 한 점도 쓰지 않는다.
-   괴물은 시리즈의 기존 얼굴(동현몬·동현파→동현주)을 정면으로 붙이고, 몸은 원작처럼 단순한 토막으로 다섯 모두 같은 틀에 색만 바꾼다.
+   괴물은 시리즈의 기존 얼굴(포동이 동현몬 · 슈슈 동현파 · 나머지 동현주)을 정면으로 붙이고, 몸은 원작처럼 단순한 토막으로 다섯 모두 같은 틀에 색만 바꾼다.
    먹는 동작은 네 가지(gulp 꿀꺽 · chew 우적우적 · toss 던져 받아먹기 · smoke 식후 담배 한 모금)로 크게 과장한다. */
 (function(root){
 'use strict';
@@ -49,26 +49,32 @@ KWWWEKWWWWEKWWWK
 KWWWKKWWWWKKWWWK
 KWWKWWWKKWWWKWWK
 KWWKWWWKKWWWKWWK
-KWWKKWWWWWWKKWWK
-KWWKRRRRRRRRKWWK
-.KKKWWWWWWWWKKK.`,eyes:[[4,4,2,2],[10,4,2,2]],mouth:[8,9,6],skin:'W'},
+.KKKWWWWWWWWKKK.
+...KWWWWWWWWK...
+....KRRRRRRK....`,eyes:[[4,4,2,2],[10,4,2,2]],mouth:[8,9,6],skin:'W'},
 shushu:{rows:`
-KhhK........KhhK
-hhhhK..KK..Khhhh
-KhhKKKKhhKKKKhhK
-.KKKhhhhhhhhKKK.
-..KhhhhhhhhhhK..
-..KhhhhhhhhhhK..
-.KssssssssssssK.
-.KssssssssssssK.
-.KsssKKssKKsssK.
-.KsssKKssKKsssK.
-.KspsssssssspsK.
-.KsssKssssKsssK.
-..KsssKKKKsssK..
-...KssssssssK...
-....KKssssKK....
-......KKKK......`,eyes:[[5,8,2,2],[9,8,2,2]],mouth:[8,12,6],skin:'s'},
+....ooo..............ooo....
+...oHHHo............oHHHo...
+..oHhHHHo..oooooo..oHhHHHo..
+..oHhHHHo.oHHHHHHo.oHhHHHo..
+..oHHHHHooHHhhHBqHqoHHHHHo..
+...oHHHooHhhHHHBBkBBoHHHo...
+....ooooHHHHHHHrHHHroooo....
+......oHHHHHHHHHHHHHHo......
+.....oHHHHHHHHHHHHHHHHo.....
+.....oHHHHHHHHHHHHHHHHo.....
+....oHHHHHHHHHHHHHHHHHHo....
+....oHHHsssHHHssssHHHHHo....
+....oHsswesssswessssHHHo....
+.....osseesssseessssHHo.....
+.....oHseesssseessssHHo.....
+.....obbssssssssbbssHHo.....
+......ossssmmssssssHHo......
+.......osssssssssssHo.......
+........ossssssssHHo........
+.........ooHsssHHoo.........
+...........osssso...........
+..........oossssoo..........`,pal:{o:'#63483a',H:'#4b382e',h:'#775242',s:'#efc7a6',e:'#49392f',w:'#fbf4db',b:'#dc9c83',m:'#a87362',c:'#f5ead1',D:'#d48a78',d:'#ad6e62',y:'#edc776',S:'#f4e8cd',R:'#cf6157',r:'#a64b44',L:'#f4e8cd',W:'#f4e8cd',B:'#cf6157',k:'#a64b44',q:'#ef9a8b'},eyes:[[8,12,2,3],[14,12,2,3]],mouth:[12,17,6],skin:'s'},
 lion:{rows:`
 .......KK.......
 ....KKKppKKK....
@@ -121,14 +127,14 @@ K55555555555555K
 ....KKKKKKKK....
 ................`,eyes:[[2,7,3,3],[11,7,3,3]],mouth:[8,12,6],skin:'s'}
 };
-for(const k in FACE){ const f=FACE[k]; f.grid=f.rows.trim().split('\n'); f.h=f.grid.length; }
+for(const k in FACE){ const f=FACE[k]; f.grid=f.rows.trim().split('\n'); f.h=f.grid.length; f.w=f.grid[0].length; }
 /* 키(발에서 머리 꼭대기까지): 얼굴 줄 수 + 몸통 10 + 다리 6. 포동이 27, 나머지 32 */
-const HGT={podong:27,shushu:32,lion:32,copter:32,doom:32};
+const HGT={podong:27,shushu:38,lion:32,copter:32,doom:32};
 /* 글자 격자 그리기: (x0,y0)가 왼쪽 위 */
-function grid(g,rows,x0,y0){ for(let r=0;r<rows.length;r++){ const row=rows[r]; for(let c=0;c<row.length;c++){ const col=PAL[row[c]]; if(col) px(g,x0+c,y0+r,1,1,col); } } }
+function grid(g,rows,x0,y0,pal){ pal=pal||PAL; for(let r=0;r<rows.length;r++){ const row=rows[r]; for(let c=0;c<row.length;c++){ const col=pal[row[c]]; if(col) px(g,x0+c,y0+r,1,1,col); } } }
 /* 얼굴 + 표정: 눈(open·closed·x·wide·happy·half)과 입(0~1) */
 function drawFace(g,P,key,x0,y0){
-  const F=FACE[key]; grid(g,F.grid,x0,y0); const skin=PAL[F.skin], eyeBg=PAL[F.eye||'E'];
+  const F=FACE[key], pal=F.pal||PAL; grid(g,F.grid,x0,y0,pal); const skin=pal[F.skin], eyeBg=pal[F.eye||'E'];
   if(P.eyes!=='open'){ for(const [c,r,w,h] of F.eyes){ const x=x0+c, y=y0+r; px(g,x,y,w,h,skin);
     if(P.eyes==='closed') px(g,x,y+h-1,w,1,C.line);
     else if(P.eyes==='x'){ px(g,x,y,1,1,C.line); px(g,x+w-1,y,1,1,C.line); px(g,x+((w-1)>>1),y+((h-1)>>1),1,1,C.line); px(g,x,y+h-1,1,1,C.line); px(g,x+w-1,y+h-1,1,1,C.line); }
@@ -139,7 +145,7 @@ function drawFace(g,P,key,x0,y0){
 }
 /* 몸 토막: 색만 바꿔 다섯 괴물이 함께 쓴다 */
 function body(g,P,t,key,S){
-  const up=P.body, L=C.line, legs=P.leg, arms=P.arm; const F=FACE[key]; const hx=-8+P.lean, hy=-16-F.h+up+P.head; /* 머리 왼쪽 위 */
+  const up=P.body, L=C.line, legs=P.leg, arms=P.arm; const F=FACE[key]; const hx=-(F.w>>1)+P.lean, hy=-16-F.h+up+P.head; /* 머리 왼쪽 위 */
   const hand=(x,y)=>{ if(S.glove){ px(g,x-3,y-3,7,6,L); px(g,x-2,y-2,5,4,S.glove); px(g,x-2,y-2,3,1,S.glove2); } else { px(g,x-2,y-2,5,5,L); px(g,x-1,y-1,3,3,S.hand); px(g,x-1,y+1,1,1,L); px(g,x+1,y+1,1,1,L); } };
   const foot=(x,y)=>{ px(g,x-3,y-2,7,2,S.foot); px(g,x-3,y-1,7,1,L); };
   /* 뒤쪽 팔 */ limb(g,-7,-13+up,arms[1][0],arms[1][1]+up,4,S.arm,L); hand(arms[1][0],arms[1][1]+up);
