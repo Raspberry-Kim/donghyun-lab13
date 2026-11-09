@@ -302,7 +302,7 @@ document.addEventListener('keydown',e=>{
   const k=keyOf(e); if(!k) return; e.preventDefault(); if(e.repeat&&!/^(left|right|up|down)$/.test(k)) return; keyDown(k);
 });
 document.addEventListener('keyup',e=>{ const k=keyOf(e); if(!k) return; keyUp(k); });
-GP.start({hint:'A 점프 · B 주먹 · Y 설명 · + 메뉴',status:t=>status(t),
+GP.start({hint:'A 주먹 · B 점프 · Y 설명 · + 메뉴',status:t=>status(t),
   down(k){ if(!S||tab!=='play') return; keyDown(k); }, up(k){ if(!S) return; keyUp(k); }});
 function keyDown(k){
   if(!S) return;

@@ -11,7 +11,7 @@ const FORMS=[
   {id:2,key:'lion',name:'라이언',from:'동현파의 분홍 선충',color:'#f0a3a3',atk:0.7,def:0.8,reach:2,speed:1.0,hang:1.0,
    desc:'힘은 약하지만(70%, 맷집 80%) 팔이 길다. 한 번 치면 창이 두 칸씩 패이고, 옆 건물과 길 위의 경찰차·택시를 멀리서도 잡아먹는다.'},
   {id:3,key:'copter',name:'꼬리콥터',from:'동현콥의 꼬리 날개',color:'#2bb0c8',atk:0.7,def:0.8,reach:1,speed:1.0,hang:3.0,
-   desc:'힘·맷집은 약하지만(80%) 꼬리 날개 덕에 점프가 아주 느리게 떨어진다. 공중에서 좌우로 방향을 바꿔 원하는 건물에 내려앉는다.'},
+   desc:'힘 70%·맷집 80%로 약하지만 꼬리 날개 덕에 점프가 아주 느리게 떨어진다. 공중에서 좌우로 방향을 바꿔 원하는 건물에 내려앉는다.'},
   {id:4,key:'doom',name:'둠가이',from:'동현둠의 철모',color:'#5a8f3a',atk:1.5,def:1.4,reach:1,speed:0.75,hang:1.0,
    desc:'힘 150%에 맷집 140%로 둘 다 세다. 대신 무거워서 걷고 오르는 것이 느리다(75%).'},
   {id:5,key:'podong',name:'포동이',from:'실험실의 강아지',color:'#f6ecd6',atk:1.0,def:1.0,reach:1,speed:1.0,hang:1.0,
@@ -172,9 +172,9 @@ function step(S,k){
       }
       if(h.state==='climb'){
         h.y=clamp(h.y,top+WALL_TOP,GROUND-4);
-        /* 맨 아래에서 ↓를 잠시 누르고 있으면 내려선다. 짧게 ↓+Z는 길을 향한 아래 주먹 */
+        /* 맨 아래에서 ↓를 잠시 누르고 있으면 내려선다. 짧게 ↓+X는 길을 향한 아래 주먹 */
         if(h.y>=GROUND-4&&k.down&&h.punchT<=0&&!k.punchPressed){ h.downT=(h.downT||0)+1; if(h.downT>=10){ h.downT=0; h.state='ground'; h.y=GROUND; h.bld=-1; h.side=0; S.events.push({t:'land'}); } } else h.downT=0;
-        if(h.state==='climb'&&k.jumpPressed){ /* 매달린 채 뛰기: 바라보는 쪽으로 짧게. 옆 건물 쪽이면 그 옆벽을 잡고, 제 건물 쪽이면 건너편 옆벽·지붕으로 */ const dx=k.left?-1:k.right?1:h.dir; h.state='air'; h.vy=-2.8; h.vx=dx*1.3; h.dir=dx; h.from={bld:h.bld,side:h.side}; h.airT=0; h.bld=-1; h.side=0; S.events.push({t:'jump'}); }
+        if(h.state==='climb'&&k.jumpPressed){ /* 매달린 채 Z: 붙어 있던 쪽으로 뛰어내려 바닥에 선다(일반 원칙). 건물을 가로질러 반대편으로 가지 않는다. 떨어지며 ↑를 누르면 스치는 옆벽(옆 건물)을 잡는다 */ const dx=h.side; h.state='air'; h.vy=-2.0; h.vx=dx*0.6; h.dir=dx; h.from={bld:h.bld,side:h.side,drop:1}; h.airT=0; h.bld=-1; h.side=0; S.events.push({t:'jump'}); }
       }
     }
   } else if(h.state==='roof'){
@@ -196,7 +196,7 @@ function step(S,k){
     /* 지붕에 내려앉기 */
     if(h.vy>0){ const b=buildAt(S,h.x); if(b){ const top=topY(b); if(py<=top&&h.y>=top){ h.state='roof'; h.bld=b.i; h.y=top; h.vx=h.vy=0; stomp(S,b); } } }
     /* 옆벽 잡기: 떨어지거나 스치며 지나는 옆벽을 잡는다(방금 떠난 옆벽은 잠시 제외) */
-    if(h.state==='air'){ const w=wallNear(S,h.x,6); if(w&&h.y>topY(w.b)+WALL_TOP-2&&h.y<GROUND-2&&!(h.from&&h.airT<14&&h.from.bld===w.b.i&&h.from.side===w.side)){ grab(S,w.b,w.side,h.y); h.vx=h.vy=0; } }
+    if(h.state==='air'&&!(h.from&&h.from.drop&&!k.up)){ /* 옆벽에서 뛰어내린 뒤에는 ↑를 누르고 있을 때만 잡는다 */ const w=wallNear(S,h.x,h.from&&h.from.drop?10:6); if(w&&h.y>topY(w.b)+WALL_TOP-2&&h.y<GROUND-2&&!(h.from&&(h.airT<14||h.from.drop)&&h.from.bld===w.b.i&&h.from.side===w.side)){ grab(S,w.b,w.side,h.y); h.vx=h.vy=0; } }
     if(h.state==='air'&&h.y>=GROUND){ h.y=GROUND; h.state='ground'; h.vx=0; h.vy=0; S.events.push({t:'land'}); }
   }
   /* 주먹: 방향키를 누른 채 치면 그쪽(위·아래·옆)을 친다 */
@@ -315,12 +315,12 @@ function autoKeys(S,target,k){
   else if(h.state==='climb'){ const b=S.builds[h.bld];
     if(target.y>=GROUND-8){ k.down=true; }
     else if(tb&&tb.i===b.i){ if(target.y<topY(b)-2) k.up=true; else { const dy=target.y-(h.y-HAND); if(Math.abs(dy)>4){ if(dy<0) k.up=true; else k.down=true; } else { if(h.dir!==-h.side){ if(h.side>0) k.left=true; else k.right=true; } target.done=true; } } }
-    else if(tb&&tb.i===b.i+h.side){ /* 바로 옆 건물: 그쪽을 보고 뛴다 */ if(h.dir!==h.side){ if(h.side>0) k.right=true; else k.left=true; } else k.jumpPressed=true; }
+    else if(tb&&tb.i===b.i+h.side){ /* 바로 옆 건물: 그쪽으로 뛰어내리고 공중에서 ↑로 옆벽을 잡는다 */ k.jumpPressed=true; }
     else { k.down=true; /* 먼 건물·빈터: 내려가서 걷는다 */ } }
   else if(h.state==='roof'){ const b=S.builds[h.bld];
     if(tb&&tb.i===b.i&&target.y>topY(b)+4){ const side=target.x<b.x+b.w/2?-1:1; const ex=b.x+(side>0?b.w:0); if(Math.abs(h.x-ex)<=4) k.down=true; else toward(ex); }
     else if(Math.abs(dx)>4) toward(target.x); else target.done=true; }
-  else if(h.hang>1.5){ if(Math.abs(dx)>6) toward(target.x); }
+  else if(h.state==='air'){ if(tb&&target.y<GROUND-12&&Math.abs(h.x-(tb.x+(h.x<tb.x+tb.w/2?0:tb.w)))<=10) k.up=true; /* 찍은 건물의 옆벽을 스치면 잡는다 */ if(h.hang>1.5&&Math.abs(dx)>6) toward(target.x); }
   return k;
 }
 
