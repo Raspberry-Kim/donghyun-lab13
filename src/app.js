@@ -1,6 +1,6 @@
 /* 동현램 앱: 동현랭 편집기 → 출전 규약(괴물·시작 도시·목숨) → 키보드·게임패드·손가락(마우스) 조작. 동현전·동현워·동현크와 같은 키 배치와 저장 방식. */
 (function(){
-const HINT0='<span><kbd>X</kbd>점프</span><span><kbd>Z</kbd>주먹</span><span><kbd>A</kbd>설명</span><span><kbd>↵</kbd>메뉴</span>';
+const HINT0='<span><kbd>X</kbd>주먹</span><span><kbd>Z</kbd>점프</span><span><kbd>A</kbd>설명</span><span><kbd>↵</kbd>메뉴</span>';
 const $=s=>document.querySelector(s), E=window.Engine, R=window.Render, SP=window.Sprites, {FORMS,CITIES,EN}=E;
 const canvas=$('#board'), g=canvas.getContext('2d');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -81,7 +81,7 @@ function parseSortie(out){
 const formOf=c=>FORMS[c.form-1];
 function sortieCard(c){
   const f=formOf(c);
-  $('#sortie-card').innerHTML=[['괴물',`${f.name} · ${f.from}`],['시작 도시',`${c.city} · ${CITIES[c.city-1].name} → ${CITIES.length} 마라도까지`],['목숨',c.lives===0?'무한':String(c.lives)],['조작','←→↑↓ 이동·오르기 · X 점프 · Z 주먹 · 화면을 직접 찍어도 된다']].map(([a,b])=>`<div><span>${a}</span><strong>${b}</strong></div>`).join('');
+  $('#sortie-card').innerHTML=[['괴물',`${f.name} · ${f.from}`],['시작 도시',`${c.city} · ${CITIES[c.city-1].name} → ${CITIES.length} 마라도까지`],['목숨',c.lives===0?'무한':String(c.lives)],['조작','←→↑↓ 이동·오르기 · X 주먹 · Z 점프 · 화면을 직접 찍어도 된다']].map(([a,b])=>`<div><span>${a}</span><strong>${b}</strong></div>`).join('');
   $('#stamp-forms').innerHTML=`${f.name} <span>괴물</span>`;
 }
 function result(text,kind){ const r=$('#result'); r.textContent=text; r.dataset.kind=kind||''; }
@@ -288,7 +288,7 @@ function renderSlotList(){
 }
 
 /* ---------- 키보드: 동현전·동현워·동현크와 같은 배치 ---------- */
-const KEYMAP={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',KeyX:'x',KeyZ:'z',KeyS:'s',KeyA:'a',Enter:'enter',NumpadEnter:'enter',Space:'x'};
+const KEYMAP={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',KeyX:'x',KeyZ:'z',KeyS:'s',KeyA:'a',Enter:'enter',NumpadEnter:'enter',Space:'z'};
 function keyOf(e){ return KEYMAP[e.code]||({x:'x',z:'z',s:'s',a:'a',X:'x',Z:'z',S:'s',A:'a',Enter:'enter',ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'})[e.key]||null; }
 document.addEventListener('keydown',e=>{
   if(!S||tab!=='play') return;
@@ -305,12 +305,12 @@ function keyDown(k){
   if(mode==='clear'){ if(k==='x'||k==='enter') nextCity(); return; }
   if(menu){ if(k==='up'||k==='down'){ const n=menu.items.length; menu.i=(menu.i+(k==='up'?-1:1)+n)%n; drawMenu(); } else if(k==='x'||k==='enter'){ pick(); } else if(k==='z'){ cancelMenu(); } return; }
   if(/^(left|right|up|down)$/.test(k)){ target=null; keys[k]=true; }
-  else if(k==='x'){ keys.jump=true; keys.jumpPressed=true; }
-  else if(k==='z'){ keys.punch=true; keys.punchPressed=true; }
+  else if(k==='x'){ keys.punch=true; keys.punchPressed=true; }
+  else if(k==='z'){ keys.jump=true; keys.jumpPressed=true; }
   else if(k==='a'){ const f=E.form(S); S.msg=`${f.name}: ${f.desc}`; S.msgT=160; }
   else if(k==='enter') mainMenu();
 }
-function keyUp(k){ if(/^(left|right|up|down)$/.test(k)) keys[k]=false; else if(k==='x') keys.jump=false; else if(k==='z') keys.punch=false; }
+function keyUp(k){ if(/^(left|right|up|down)$/.test(k)) keys[k]=false; else if(k==='x') keys.punch=false; else if(k==='z') keys.jump=false; }
 document.querySelectorAll('#touchpad [data-key]').forEach(b=>{
   const m={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',x:'x',z:'z',s:'s',a:'a',Enter:'enter'}[b.dataset.key];
   b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keyDown(m);});

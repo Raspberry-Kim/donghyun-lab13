@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it using the metadata below."
 title: "Donghyunram (동현램): a single-player city-smashing laboratory in the manner of Rampage, with the monster, starting city and lives set through the esoteric language Donghyun-lang"
 type: software
-version: "0.09"
+version: "0.10"
 doi: "10.5281/zenodo.24068304"
 date-released: "2026-11-08"
 authors:
