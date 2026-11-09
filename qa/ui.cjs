@@ -19,19 +19,19 @@ const H='window.__donghyunram';
   // 0) 첫 화면: 설정 패널·미리보기·불러오기 칸 비어 있음·전체 화면 단추 꺼짐
   assert.strictEqual(await G('D.mode'),'setup'); assert.ok(!(await p.$eval('#setup-panel',e=>e.hidden))); assert.ok(await p.$eval('#hud',e=>e.hidden));
   assert.deepStrictEqual(await p.$$eval('.slot-btn',a=>a.map(b=>b.disabled)),[true,true,true]); assert.ok(await p.$eval('#full',e=>e.disabled));
-  assert.strictEqual(await p.$eval('#example',e=>e.options.length),5); assert.match(await p.$eval('#stamp-forms',e=>e.textContent),/포동이/);
+  assert.strictEqual(await p.$eval('#example',e=>e.options.length),6); assert.match(await p.$eval('#stamp-forms',e=>e.textContent),/슈슈/);
   assert.strictEqual(await p.$eval('.series-links',e=>e.children.length),14); assert.strictEqual(await p.$eval('.series-item.is-current .series-name',e=>e.textContent.replace('™','')),'동현램');
-  ok('첫 화면: 설정 패널 · 칸 비어 있음 · 예제 5 · 띠 14');
-  // 1) 규약 오류: 몬스터 번호 7 → 시작하지 않는다 · 정수 4개 → 오류
-  await p.fill('#code','나는 동현이냐?\n뿡뿡 도오오오오오옹~뿡뿡뿡\n동현이구나'); await p.click('#run'); await p.waitForTimeout(100);
+  ok('첫 화면: 설정 패널 · 칸 비어 있음 · 예제 6 · 띠 14');
+  // 1) 규약 오류: 몬스터 번호 7(여섯 번째 초파리 다음) → 시작하지 않는다 · 정수 4개 → 오류
+  await p.fill('#code','나는 동현이냐?\n뿡뿡 도오오오오오오옹~뿡뿡뿡\n동현이구나'); await p.click('#run'); await p.waitForTimeout(100);
   assert.match(await p.$eval('#result',e=>e.textContent),/몬스터 번호가 아니다/); assert.strictEqual(await G('D.mode'),'setup');
   const pr=await G(`D.parseSortie('2 3 4 5')`); assert.strictEqual(pr.go,false); assert.match(pr.err[0],/4개/);
   const pr2=await G(`D.parseSortie('5 11 5')`); assert.deepStrictEqual([pr2.go,pr2.c.form,pr2.c.city,pr2.c.lives],[true,5,11,5]);
   const pr3=await G(`D.parseSortie('1 1 0')`); assert.deepStrictEqual([pr3.go,pr3.c.lives],[true,0]); ok('규약: 몬스터 범위 · 정수 개수 · 도시·목숨 읽기');
-  // 2) 예제 다섯 모두 시작된다 · 몬스터·도시·목숨이 맞다
-  const want={podong:[1,1,3],shushu:[2,1,3],lion:[3,1,3],copter:[4,3,3],doom:[5,11,5]};
+  // 2) 예제 여섯 모두 시작된다 · 몬스터·도시·목숨이 맞다
+  const want={shushu:[1,1,3],lion:[2,1,3],copter:[3,1,3],doom:[4,1,3],podong:[5,1,5],fly:[6,1,3]};
   for(const id of Object.keys(want)){ await toSetup(); await p.selectOption('#example',id); await p.click('#run'); await p.waitForTimeout(150); const t=await txt(); assert.strictEqual(t.mode,'play',id); assert.strictEqual(t.form,id); assert.strictEqual(t.city,want[id][1]); assert.strictEqual(t.lives,want[id][2]); assert.ok(!(await p.$eval('#hud',e=>e.hidden))); }
-  assert.strictEqual(await p.$eval('#form-card',e=>e.textContent.includes('둠가이')),true); assert.match(await p.$eval('#day',e=>e.textContent),/도시 11 · 중문/); ok('예제 다섯: 몬스터·시작 도시·목숨');
+  assert.strictEqual(await p.$eval('#form-card',e=>e.textContent.includes('초파리')),true); assert.match(await p.$eval('#day',e=>e.textContent),/도시 1 · 신중동/); ok('예제 여섯: 몬스터·시작 도시·목숨 · 모두 신중동');
   // 3) 키보드: → 걷기 · ↑ 건물 잡기 · X 주먹 · Z 점프 · A 설명 메뉴 · Enter 메뉴
   await toSetup(); await p.selectOption('#example','podong'); await p.click('#run'); await p.waitForTimeout(150); await p.evaluate(()=>document.querySelector('#board-wrap').scrollIntoView({block:'center'}));
   await p.focus('#board-wrap'); let x0=(await txt()).hero.x; await p.keyboard.down('ArrowRight'); await p.waitForTimeout(400); await p.keyboard.up('ArrowRight'); assert.ok((await txt()).hero.x>x0+10,'→ 걷기');
@@ -39,7 +39,7 @@ const H='window.__donghyunram';
   const bx=await G('(()=>{const B=S.builds; let m=0; for(let i=1;i<B.length;i++) if(B[i].floors>B[m].floors) m=i; return B[m].x+20;})()'); /* 가장 높은 건물: 3층짜리면 0.5초 안에 지붕까지 올라가 버린다 */ await p.evaluate(`${H}.state.hero.x=${bx}`); await p.keyboard.down('ArrowUp'); await p.waitForTimeout(500); await p.keyboard.up('ArrowUp'); let t=await txt(); assert.strictEqual(t.hero.state,'climb','↑ 잡기'); assert.ok(t.hero.y<176-8,'오른다');
   const sc0=t.score; await p.keyboard.press('KeyX'); await p.waitForTimeout(400); t=await txt(); assert.ok(t.score>sc0,'X 주먹 점수'); assert.ok(t.builds.some(s=>s!=='u0')||true);
   await p.keyboard.press('KeyZ'); await p.waitForTimeout(100); t=await txt(); assert.strictEqual(t.hero.state,'air','Z 점프'); await p.waitForTimeout(1500);
-  await p.keyboard.press('KeyA'); await p.waitForTimeout(100); assert.match(await G('S.msg'),/포동이: 기본 몬스터/,'A 설명 말풍선');
+  await p.keyboard.press('KeyA'); await p.waitForTimeout(100); assert.match(await G('S.msg'),/포동이: 힘·맷집/,'A 설명 말풍선');
   await p.keyboard.press('Enter'); await p.waitForTimeout(100); assert.match(await menuText(),/잠시 멈춤/); const fr0=await G('S.time'); await p.waitForTimeout(400); assert.strictEqual(await G('S.time'),fr0,'메뉴 동안 멎음'); await mi('계속 간다'); assert.strictEqual(await menuText(),''); ok('키보드: → ↑ Z X A Enter · 메뉴 동안 멎음');
   // 4) 마우스: 몬스터를 찍으면 주먹 · 길을 찍으면 그리로 걷는다 · 위로 튕기면 점프
   await p.evaluate(`${H}.state.hero.state='ground';${H}.state.hero.y=176;${H}.state.hero.bld=-1;${H}.state.hero.x=160;`); await p.waitForTimeout(50);

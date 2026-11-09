@@ -23,11 +23,12 @@ $('.brand').onclick=e=>{e.preventDefault();document.querySelector('[data-tab=pla
 
 /* ---------- 규칙 탭 표 ---------- */
 const pct=v=>Math.round(v*100)+'%';
-$('#form-grid').innerHTML=FORMS.map(f=>`<article><h4>${f.id} · ${f.name}<small>${f.from}</small></h4><p>${f.desc}</p><p class="stat">힘 ${pct(f.atk)} · 맷집 ${pct(f.def)} · 걸음 ${pct(f.speed)}${f.reach>1?' · 손 길이 2배':''}${f.hang>1?' · 낙하 1/3':''}</p></article>`).join('');
+$('#form-grid').innerHTML=FORMS.map(f=>`<article><h4>${f.id} · ${f.name}<small>${f.from}</small></h4><p>${f.desc}</p><p class="stat">힘 ${pct(f.atk)} · 맷집 ${pct(f.def)} · 걸음 ${pct(f.speed)}${f.reach>1?' · 손 길이 2배':''}${f.hang>1?` · 낙하 1/${Math.round(f.hang)}`:''}${f.fly?' · 공중에서 Z로 날갯짓':''}</p></article>`).join('');
 $('#enemy-table').innerHTML='<thead><tr><th>적</th><th>먹기</th><th>체력 회복</th><th>공격</th><th>점수</th><th>습성</th></tr></thead><tbody>'+[
  ['soldier','길에서 주먹','총알 1','몬스터를 따라다니며 총을 쏜다. 길에서 한 대 치면 잡아먹는다. 무너지는 건물 아래 있으면 깔린다'],
  ['cop','길에서 주먹 두 번','없음','길을 지나간다. 두 번 치면 멈추고 잡아먹는다(슈슈·둠가이는 한 번)'],
  ['taxi','길에서 주먹','없음','길을 지나간다. 한 번 치면 잡아먹는다'],
+ ['tram','길에서 주먹 세 번','없음','두 량짜리 노면전차가 선로를 따라 천천히 지나간다. 세 번 치면 멈추고 승객을 잡아먹는다(슈슈·둠가이는 두 번). 드물게 온다'],
  ['tank','못 먹는다 · 세 번 쳐서 부순다','포탄 3','느리게 다가와 포탄을 쏜다. 빗나간 포탄은 창을 깬다. 슈슈·둠가이는 두 번에 부순다'],
  ['heli','못 먹는다 · 건물에 매달려 손이 닿으면 떨어뜨린다','로켓 2','건물 높이로 날아와 로켓을 쏜다. 라이언은 더 멀리서도 친다']
 ].map(([k,eat,atk,note])=>{ const d=EN[k]; return `<tr><td>${d.name}</td><td>${eat}</td><td>${d.stam?'+'+d.stam:'—'}</td><td>${atk}</td><td>${d.score}</td><td>${note}</td></tr>`; }).join('')+'</tbody>';
@@ -71,7 +72,7 @@ function parseSortie(out){
   const tok=out.split(/\s+/).filter(Boolean).map(Number), c={...DEFAULT}, err=[];
   if(tok.length===0){ return {c,go:false,err:[]}; }
   const [f,ci,li]=tok;
-  if(!(Number.isInteger(f)&&f>=1&&f<=FORMS.length)) err.push(`첫 정수 ${f}은(는) 몬스터 번호가 아니다. 1 포동이 · 2 슈슈 · 3 라이언 · 4 꼬리콥터 · 5 둠가이 중 하나를 출력하자.`);
+  if(!(Number.isInteger(f)&&f>=1&&f<=FORMS.length)) err.push(`첫 정수 ${f}은(는) 몬스터 번호가 아니다. ${FORMS.map(x=>x.id+' '+x.name).join(' · ')} 중 하나를 출력하자.`);
   else c.form=f;
   if(!err.length&&tok.length>=2){ if(!(Number.isInteger(ci)&&ci>=1&&ci<=CITIES.length)) err.push(`둘째 정수 ${ci}은(는) 시작 도시가 아니다. 1~${CITIES.length}만 된다.`); else c.city=ci; }
   if(!err.length&&tok.length>=3){ if(!(Number.isInteger(li)&&li>=0&&li<=9)) err.push(`셋째 정수 ${li}은(는) 목숨 수가 아니다. 1~9 또는 0(무한)만 된다.`); else c.lives=li; }
@@ -81,7 +82,7 @@ function parseSortie(out){
 const formOf=c=>FORMS[c.form-1];
 function sortieCard(c){
   const f=formOf(c);
-  $('#sortie-card').innerHTML=[['몬스터',`${f.name} · ${f.from}`],['시작 도시',`${c.city} · ${CITIES[c.city-1].name} → ${CITIES.length} 마라도까지`],['목숨',c.lives===0?'무한':String(c.lives)],['조작','←→↑↓ 이동·오르기 · X 주먹 · Z 점프 · 화면을 직접 찍어도 된다']].map(([a,b])=>`<div><span>${a}</span><strong>${b}</strong></div>`).join('');
+  $('#sortie-card').innerHTML=[['몬스터',`${f.name} · ${f.from}`],['시작 도시',`${c.city} · ${CITIES[c.city-1].name} → ${CITIES.length} ${CITIES[CITIES.length-1].name}까지`],['목숨',c.lives===0?'무한':String(c.lives)],['조작','←→↑↓ 이동·오르기 · X 주먹 · Z 점프 · 화면을 직접 찍어도 된다']].map(([a,b])=>`<div><span>${a}</span><strong>${b}</strong></div>`).join('');
   $('#stamp-forms').innerHTML=`${f.name} <span>몬스터</span>`;
 }
 function result(text,kind){ const r=$('#result'); r.textContent=text; r.dataset.kind=kind||''; }
@@ -141,19 +142,23 @@ function previewOverlay(){ const f=formOf(cfg), c=CITIES[cfg.city-1];
   SP.drawIdle(g,f,T,160,E.GROUND,1); }
 
 /* ---------- 사건 → 소리·기록 ---------- */
-const SNDMAP={jump:'jump',land:'thud',grab:'paw',letgo:'swish',punch:'swish',hit:'thud',whiff:'swish',hurt:'hurt',shrink:'die',respawn:'pop',over:'lose',win:'win',clear:'cheer',collapse:'explode',gone:'fall'};
-const eatName={person:'사람',soldier:'군인',cop:'경찰차',taxi:'택시'};
+const SNDMAP={jump:'jump',land:'thud',grab:'paw',letgo:'swish',punch:'swish',hit:'thud',whiff:'swish',hurt:'hurt',shrink:'die',respawn:'pop',over:'lose',win:'win',clear:'cheer',warn:'rumble',collapse:'explode',gone:'fall',tram:'tramBell',clank:'clank',flap:'flap'};
+const KILLSND={heli:'boomHeli',tank:'boomTank',cop:'boomCar',taxi:'boomTaxi',tram:'boomTram',soldier:'pop'};
+const eatName={person:'사람',soldier:'군인',cop:'경찰차',taxi:'택시',tram:'트램 승객'};
 const eul=w=>{ const c=w.charCodeAt(w.length-1); return (c>=0xac00&&c<=0xd7a3&&(c-0xac00)%28)?w+'을':w+'를'; };
 const eatVerb={gulp:'꿀꺽 삼켰다',chew:'우적우적 씹어 먹었다',toss:'공중에 던져 받아먹었다',smoke:'꿀꺽 삼키고 담배를 한 모금 물었다'};
 function events(){
+  const played={}; const once=k=>{ if(played[k]) return; played[k]=1; SND.play(k); }; /* 같은 프레임의 같은 소리는 한 번만(주먹 하나가 여러 칸을 칠 때 겹치지 않게) */
   for(const ev of S.events){
-    if(ev.t==='eat'){ SND.play(ev.what==='person'?'bone':'stomp'); log(`${eul(eatName[ev.what]||ev.what)} ${eatVerb[S.hero.eatKind]||'먹었다'}. 체력 ${Math.round(S.hero.stam)}.`); }
-    else if(ev.t==='kill'){ SND.play(ev.type==='tank'||ev.type==='heli'?'explode':'pop'); if(ev.type==='tank'||ev.type==='heli') log(`${eul(EN[ev.type].name)} 부쉈다.`); }
-    else if(ev.t==='shot'){ SND.play(ev.kind==='bullet'?'gun':ev.kind==='shell'?'cannon':'rocket'); }
-    else if(ev.t==='city'){ SND.play('zone'); }
-    else if(SNDMAP[ev.t]) SND.play(SNDMAP[ev.t]);
+    if(ev.t==='eat'){ once(ev.what==='person'?'bone':'stomp'); log(`${eul(eatName[ev.what]||ev.what)} ${eatVerb[S.hero.eatKind]||'먹었다'}. 체력 ${Math.round(S.hero.stam)}.`); }
+    else if(ev.t==='kill'){ once(KILLSND[ev.type]||'pop'); if(ev.type==='tank'||ev.type==='heli') log(`${eul(EN[ev.type].name)} 부쉈다.`); }
+    else if(ev.t==='shot'){ once(ev.kind==='bullet'?'gun':ev.kind==='shell'?'cannon':'rocket'); }
+    else if(ev.t==='city'){ once('zone'); }
+    else if(SNDMAP[ev.t]) once(SNDMAP[ev.t]);
     if(ev.t==='hurt') log(`${({bullet:'총알',shell:'포탄',rocket:'로켓'})[ev.by]||ev.by}에 맞았다 −${ev.dmg}. 체력 ${Math.round(S.hero.stam)}.`);
+    if(ev.t==='warn') log(`건물 ${ev.i+1}이(가) 금이 가며 흔들린다 — 뛰어내리자.`);
     if(ev.t==='collapse') log(`건물 ${ev.i+1}이(가) 무너진다.`);
+    if(ev.t==='tram') log('트램이 온다.');
     if(ev.t==='shrink') log('체력이 다해 사람으로 돌아갔다.');
     if(ev.t==='respawn') log(`다시 몬스터로. 남은 목숨 ${S.lives===Infinity?'∞':S.lives}.`);
     if(ev.t==='clear') cityClear();
@@ -204,7 +209,7 @@ function backToSetup(){
 }
 function finish(win){
   mode='over'; status(win?'열두 도시 완료':'모든 목숨을 잃음',win?'':'error'); resetKeys(); target=null;
-  log(win?`마라도까지 열두 도시를 모두 부쉈다. 점수 ${S.score.toLocaleString('ko-KR')}.`:'모든 목숨을 잃었다.'); $('#hint').innerHTML='<span><kbd>X</kbd><kbd>↵</kbd>출전 준비로</span>';
+  log(win?`${CITIES[CITIES.length-1].name}까지 열두 도시를 모두 부쉈다. 점수 ${S.score.toLocaleString('ko-KR')}.`:'모든 목숨을 잃었다.'); $('#hint').innerHTML='<span><kbd>X</kbd><kbd>↵</kbd>출전 준비로</span>';
 }
 function resultCard(win){
   $('#result-card').innerHTML=`<div><h3 class="${win?'win':'lose'}">${win?'열두 도시를 모두 부쉈다':'다시 해 보자'}</h3><div class="rc-grid"><div><span>점수</span><strong>${S.score.toLocaleString('ko-KR')}</strong></div><div><span>부순 도시</span><strong>${S.citiesDone}</strong></div><div><span>먹은 것</span><strong>${S.hero.eats||0}</strong></div><div><span>시간</span><strong>${Math.floor(S.time/60)}초</strong></div></div><p>X 또는 Enter로 출전 준비로 돌아간다.</p><button type="button" id="rc-back">출전 준비로</button></div>`;
@@ -342,7 +347,7 @@ $('#result-card').addEventListener('pointerdown',e=>{ if(e.target.tagName==='BUT
 window.render_game_to_text=()=>JSON.stringify(S?{mode,paused,city:S.city,status:S.status,lives:S.lives===Infinity?'inf':S.lives,score:S.score,form:E.form(S).key,
   hero:{x:Math.round(S.hero.x),y:Math.round(S.hero.y),stam:Math.round(S.hero.stam),state:S.hero.state,eatT:S.hero.eatT,eatKind:S.hero.eatKind},builds:S.builds.map(b=>b.state[0]+b.holes),
   enemies:S.ens.filter(e=>e.alive).map(e=>({t:e.type,x:Math.round(e.x),y:Math.round(e.y),hp:e.hp})),target}:{mode:'setup',cfg});
-window.__donghyunram={get state(){return S;},snapshot,restore,readSlot,saveToSlot,keyDown,keyUp,keys,get mode(){return mode;},get target(){return target;},start:()=>startGame(cfg),nextCity,parseSortie,
+window.__donghyunram={get state(){return S;},snd:SND,snapshot,restore,readSlot,saveToSlot,keyDown,keyUp,keys,get mode(){return mode;},get target(){return target;},start:()=>startGame(cfg),nextCity,parseSortie,
   step:(n=1)=>{for(let i=0;i<n;i++){if(S.status!=='play')break;tick();}}};
 selectExample(); sortieCard(cfg); preview(cfg); renderSlotList();
 /* ---------- 전체 화면(동현둠·동현크와 같은 규칙) ---------- */

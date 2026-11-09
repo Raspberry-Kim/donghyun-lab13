@@ -108,7 +108,18 @@ var DHSFX=function(storeKey){ /* 동현워의 합성 효과음에 동현크용 �
     shot:function(t){ noise(t,0.06,'bandpass',1500,0.8,0.5,0.002); var o=tone(t,'square',200,0.05,0.12,0.002); o.frequency.exponentialRampToValueAtTime(90,t+0.05); },
     shotgun:function(t){ noise(t,0.2,'lowpass',1200,0,0.9,0.002); var o=tone(t,'sine',140,0.15,0.5,0.002); o.frequency.exponentialRampToValueAtTime(45,t+0.15); },
     charge:function(t){ var f=noise(t,0.22,'bandpass',600,1.5,0.5,0.01); f.frequency.linearRampToValueAtTime(2000,t+0.2); tone(t,'triangle',330,0.1,0.15,0.005); },
-    over:function(t){ S.bell(t,523.25,0.4,0.4); S.bell(t+0.22,392,0.4,0.4); S.bell(t+0.44,261.63,0.9,0.45); }
+    over:function(t){ S.bell(t,523.25,0.4,0.4); S.bell(t+0.22,392,0.4,0.4); S.bell(t+0.44,261.63,0.9,0.45); },
+    /* 동현램 v0.15: 붕괴 예고 우르릉, 트램 종, 기물마다 다른 격파 폭발, 안 죽은 기물을 칠 때의 쇳소리, 초파리 날갯짓 */
+    rumble:function(t){ var d=1.6, b=bus(0.7); var f=noise(t,d,'lowpass',140,0,0.9,0.12,b); f.frequency.linearRampToValueAtTime(260,t+d);
+      var o=tone(t,'sine',38,d,0.5,0.1,b); o.frequency.linearRampToValueAtTime(52,t+d); for(var u=t+0.2;u<t+d;u+=0.23) noise(u,0.05,'bandpass',900+Math.random()*600,4,0.25,0.003,b); },
+    tramBell:function(t){ S.bell(t,1318.5,0.35,0.3); S.bell(t+0.18,1318.5,0.45,0.3); },
+    clank:function(t){ [1450,2210].forEach(function(f){ tone(t,'square',f*(1+Math.random()*0.03),0.09,0.05,0.001); }); noise(t,0.06,'highpass',2500,0,0.45,0.001); tone(t,'sine',170,0.07,0.35,0.002); },
+    boomCar:function(t){ noise(t,0.3,'lowpass',1400,0,0.9,0.002); var o=tone(t,'sine',150,0.22,0.6,0.002); o.frequency.exponentialRampToValueAtTime(45,t+0.22); S.clank(t+0.05); noise(t+0.12,0.25,'highpass',3200,0,0.3,0.01); /* 유리 흩어지는 쉭 */ },
+    boomTaxi:function(t){ noise(t,0.26,'lowpass',1600,0,0.8,0.002); var o=tone(t,'sine',190,0.2,0.55,0.002); o.frequency.exponentialRampToValueAtTime(60,t+0.2); var h=tone(t+0.03,'square',440,0.25,0.08,0.004); h.frequency.linearRampToValueAtTime(380,t+0.28); /* 경적이 늘어지며 꺼진다 */ },
+    boomTank:function(t){ noise(t,0.8,'lowpass',700,0,1,0.003); var o=tone(t,'sine',80,0.7,1,0.003); o.frequency.exponentialRampToValueAtTime(24,t+0.7); for(var i=0;i<3;i++) noise(t+0.15+i*0.13,0.08,'lowpass',1100,0,0.5,0.002); /* 연쇄 폭발 */ },
+    boomHeli:function(t){ noise(t,0.55,'lowpass',1000,0,0.9,0.003); var o=tone(t,'sine',120,0.5,0.8,0.003); o.frequency.exponentialRampToValueAtTime(34,t+0.5); var r=tone(t+0.05,'sawtooth',240,0.6,0.08,0.01); r.frequency.exponentialRampToValueAtTime(60,t+0.65); for(var u=t+0.1;u<t+0.6;u+=0.08) noise(u,0.03,'bandpass',320,1.5,0.3,0.003); /* 날개가 느려지며 떨어진다 */ },
+    boomTram:function(t){ noise(t,0.5,'lowpass',900,0,0.9,0.003); var o=tone(t,'sine',110,0.45,0.8,0.003); o.frequency.exponentialRampToValueAtTime(32,t+0.45); S.clank(t+0.08); S.clank(t+0.2); var z=tone(t+0.05,'sawtooth',90,0.4,0.1,0.01); z.frequency.linearRampToValueAtTime(60,t+0.45); S.bell(t+0.3,1318.5,0.4,0.15); /* 쇠 부딪힘 두 번과 마지막 종 */ },
+    flap:function(t){ for(var i=0;i<3;i++){ noise(t+i*0.045,0.035,'bandpass',320,1.2,0.9,0.004); var o=tone(t+i*0.045,'triangle',190,0.04,0.2,0.003); o.frequency.exponentialRampToValueAtTime(120,t+i*0.045+0.04); } }
   };
   var MT={foot:'foot',mech:'mech',horse:'horse',tire:'tire',tread:'tread',siege:'siege',ship:'ship',lander:'ship',air:'air'};
   return {

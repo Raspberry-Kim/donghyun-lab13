@@ -39,6 +39,7 @@ function backdrop(g,S,t){
   px(g,0,GROUND-6,W,6,'#8a8d92'); px(g,0,GROUND-6,W,1,'#b9bcc1'); for(let x=0;x<W;x+=8) px(g,x,GROUND-5,1,5,'#7a7d82'); px(g,0,GROUND-1,W,1,'#5e6166');
   px(g,0,GROUND,W,H-GROUND,'#41444b'); px(g,0,GROUND,W,1,'#55585f'); for(let i=0;i<40;i++){ const h=hsh(i,11,1); px(g,(h%W),GROUND+2+((h>>9)%20),1,1,'rgba(255,255,255,.05)'); }
   for(let x=0;x<W;x+=24) px(g,x,GROUND+10,12,2,'#d9d3b2'); px(g,0,GROUND+22,W,2,'#2b2d33');
+  /* 트램 선로: 길 위에 가는 쇠줄 두 가닥 */ px(g,0,GROUND+1,W,1,'#6a6d74'); px(g,0,GROUND+4,W,1,'#6a6d74'); for(let x=2;x<W;x+=6) px(g,x,GROUND+2,1,2,'rgba(0,0,0,.18)');
   /* 맨홀 */ px(g,150,GROUND+15,10,2,'#30333a'); px(g,151,GROUND+15,8,1,'#5a5e66');
   /* 가로등: 골목 가운데와 양 끝 */
   const lamps=[]; const bs=S.builds; if(bs.length){ lamps.push(bs[0].x-E.GAP/2); for(let i=1;i<bs.length;i++) lamps.push(Math.round((bs[i-1].x+bs[i-1].w+bs[i].x)/2)); lamps.push(bs[bs.length-1].x+bs[bs.length-1].w+E.GAP/2); }
@@ -110,12 +111,22 @@ function holeCell(g,b,c,r,col,cell,t){
   if(cut&8){ /* 위 주먹: 상인방이 깨져 위층 바닥까지 뚫렸다 */ px(g,cx+4,cy-2,CELL_W-8,3,GL.dark); px(g,cx+6,cy-2,1,3,GL.rebar); px(g,cx+12,cy-1,3,1,c.wall2); px(g,cx+8,cy-2,2,1,c.wall); }
   if(cell.person) SP.person(g,cx+CELL_W/2,cy+FLOOR-3,t,1,r*2+col+b.i);
 }
+/* 붕괴 예고의 금: 건물 전면에 지그재그 금이 위에서 아래로 번지고, 진행될수록 가지가 늘어난다. 자리는 건물 번호로 고정해 떨리지 않는다 */
+function cracks(g,b,top,p){ const hgt=GROUND-top; const n=2+Math.floor(p*3); g.save(); g.strokeStyle='rgba(20,14,10,.9)'; g.lineWidth=1; g.lineCap='square';
+  for(let i=0;i<n;i++){ const h0=hsh(b.i,i,77); let x=b.x+4+(h0%(b.w-8)), y=top+((h0>>5)%8); const len=hgt*Math.min(1,p*1.6+i*0.1); g.beginPath(); g.moveTo(x+0.5,y+0.5); let dy=0; let k=0;
+    while(dy<len&&y+dy<GROUND-2){ const hh=hsh(b.i,i,k+9); const dx=((hh%5)-2)*2; dy+=3+(hh>>4)%4; x=Math.max(b.x+1,Math.min(b.x+b.w-1,x+dx)); g.lineTo(x+0.5,y+dy+0.5); if(p>0.5&&(hh>>7)%3===0){ const bx=x+(((hh>>9)&1)?5:-5); g.lineTo(bx+0.5,y+dy+2.5); g.moveTo(x+0.5,y+dy+0.5); } k++; }
+    g.stroke(); }
+  if(p>0.3){ g.strokeStyle='rgba(255,255,255,.25)'; for(let i=0;i<n;i++){ const h0=hsh(b.i,i,77); const x=b.x+4+(h0%(b.w-8)); g.beginPath(); g.moveTo(x+1.5,top+2.5); g.lineTo(x+1.5,top+2.5+hgt*Math.min(1,p*1.6)*0.5); g.stroke(); } }
+  g.restore(); }
 function building(g,S,b,t,night){
   const c=WALLS[b.i%WALLS.length];
   if(b.state==='gone'){ rubble(g,b,c); return; }
-  const top=E.topY(b); const drop=b.state==='falling'?b.drop:0; const shake=b.state==='falling'?((b.fall&1)?1:-1):0;
-  g.save(); g.translate(shake,drop); g.beginPath(); g.rect(0,-drop,W,GROUND+drop); g.clip();
+  const top=E.topY(b); const drop=b.state==='falling'?b.drop:0; const warn=b.state==='warn'?Math.min(1,b.warn/E.WARN_T):0;
+  /* 흔들림: 붕괴 예고 중에는 진행될수록 세게(±1→±2, 위아래도 조금), 무너질 때는 ±1 */
+  let shake=b.state==='falling'?((b.fall&1)?1:-1):0, sy=0; if(warn){ const amp=warn<0.5?1:2; shake=((b.warn&1)?1:-1)*amp*((b.warn>>1)&1?1:0.5); sy=warn>0.6&&(b.warn%3===0)?1:0; }
+  g.save(); g.translate(Math.round(shake),drop+sy); g.beginPath(); g.rect(0,-drop-sy,W,GROUND+drop+sy); g.clip();
   for(let r=0;r<b.floors;r++) for(let col=0;col<COLS;col++) wallCell(g,b,c,r,col,b.cells[r][col],night);
+  if(warn){ cracks(g,b,top,warn); }
   /* 1층 가운데 문 */ const dx=b.x+Math.floor(b.w/2)-3; if(b.cells[0].every(cl=>cl.hp>0)){ px(g,dx,GROUND-12,7,12,c.trim); px(g,dx+1,GROUND-11,5,11,c.door); px(g,dx+2,GROUND-10,3,3,GL.a); px(g,dx+4,GROUND-6,1,1,c.trim); }
   /* 옥상: 난간·물탱크·실외기·안테나(건물마다 다르게) */
   px(g,b.x-1,top-2,b.w+2,3,c.roof); px(g,b.x-1,top-2,b.w+2,1,c.roof2); px(g,b.x,top+1,b.w,1,c.wall2);
@@ -138,13 +149,16 @@ function hud(g,S,t){
 }
 function render(g,S,t){
   const night=isNight(E.cityOf(S));
+  g.save(); if(S.shake>0){ /* 타격감: 기물이 부서지면 화면이 잠깐 들썩인다(결정적: 시간으로 정한다) */ const a=Math.min(3,Math.ceil(S.shake/2)); g.translate(((S.time*7)%3-1)*a,((S.time*5)%3-1)*a); }
   backdrop(g,S,t);
   for(const b of S.builds) building(g,S,b,t,night);
-  for(const e of S.ens){ if(!e.alive) continue; if(e.type==='soldier') SP.soldier(g,e,t); else if(e.type==='tank') SP.tank(g,e,t); else if(e.type==='heli') SP.heli(g,e,t); else SP.car(g,e,t); }
+  for(const e of S.ens){ if(!e.alive) continue; if(e.type==='soldier') SP.soldier(g,e,t); else if(e.type==='tank') SP.tank(g,e,t); else if(e.type==='heli') SP.heli(g,e,t); else if(e.type==='tram') SP.tram(g,e,t); else SP.car(g,e,t); }
   const h=S.hero; if(h.state!=='climb'&&h.state!=='ride'){ g.fillStyle='rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(h.x,(h.state==='roof'?h.y:GROUND)-1,11,2,0,0,Math.PI*2); g.fill(); }
   SP.drawMonster(g,E.form(S),h,t,h.x,h.y);
   for(const s of S.shots) SP.shot(g,s);
   for(const x of S.fx){ if(x.k==='quake') continue; if(x.k==='chunk'){ const c=WALLS[(x.n||0)%WALLS.length]; x.wall=(x.sz===3)?c.wall:c.wall2; } SP.fx(g,x); }
+  g.restore();
+  if(S.flashT>0){ g.fillStyle=`rgba(255,250,230,${S.flashT>=3?0.45:0.2})`; g.fillRect(0,0,W,H); }
   hud(g,S,t);
 }
 root.Render={render,WALLS,isNight};

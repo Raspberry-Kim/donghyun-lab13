@@ -125,13 +125,30 @@ K55555555555555K
 ..KsssKKKKsssK..
 ...KssssssssK...
 ....KKKKKKKK....
-................`,eyes:[[2,7,3,3],[11,7,3,3]],mouth:[8,12,6],skin:'s'}
+................`,eyes:[[2,7,3,3],[11,7,3,3]],mouth:[8,12,6],skin:'s'},
+fly:{rows:`
+....K......K....
+...KKK....KKK...
+....KKKKKKKK....
+KKK.KhhhhhhK.KKK
+888KhhhhhhhhK888
+88RRRhhhhhhRRR88
+88RMRRhhhhRMRR88
+KKRRRRhhhhRRRRKK
+.KRRRhhhhhhRRRK.
+..KhhhhhhhhhhK..
+..KhhhhhhhhhhK..
+..KhhhhKKhhhhK..
+...KhhhhhhhhK...
+....KhhhhhhK....
+.....KKKKKK.....
+................`,eyes:[[2,5,4,4],[10,5,4,4]],mouth:[8,12,4],skin:'h',eye:'R'}
 };
 /* 슈슈의 동현파 원본 얼굴은 왼쪽(-x)을 본다. 몸틀은 +x가 앞이므로 좌우만 뒤집어(mirror) 붙인다. 점 하나도 바꾸지 않는다 */
 function mirrorFace(f){ const W=f.w; f.grid=f.grid.map(r=>r.split('').reverse().join('')); f.eyes=f.eyes.map(([c,r,w,h])=>[W-c-w,r,w,h]); const [mc,mr,mw]=f.mouth; f.mouth=[W-mc-(mw&1),mr,mw]; }
 for(const k in FACE){ const f=FACE[k]; f.grid=f.rows.trim().split('\n'); f.h=f.grid.length; f.w=f.grid[0].length; if(f.mirror) mirrorFace(f); }
 /* 키(발에서 머리 꼭대기까지): 얼굴 줄 수 + 몸통 10 + 다리 6. 포동이 27, 슈슈 38, 나머지 32 */
-const HGT={podong:27,shushu:38,lion:32,copter:32,doom:32};
+const HGT={podong:27,shushu:38,lion:32,copter:32,doom:32,fly:32};
 /* 글자 격자 그리기: (x0,y0)가 왼쪽 위 */
 function grid(g,rows,x0,y0,pal){ pal=pal||PAL; for(let r=0;r<rows.length;r++){ const row=rows[r]; for(let c=0;c<row.length;c++){ const col=pal[row[c]]; if(col) px(g,x0+c,y0+r,1,1,col); } } }
 /* 얼굴 + 표정: 눈(open·closed·x·wide·happy·half)과 입(0~1) */
@@ -158,6 +175,13 @@ function body(g,P,t,key,S){
   const tw=front?(ch?16:14):(ch?14:10), th=ch?11:10, tx=-(tw>>1)+(ch&&!front?1:0);
   const shF=front?-(tw>>1)+3:(ch?-4:-2), shN=front?(tw>>1)-3:(ch?5:3), hipF=front?-(tw>>1)+3:(ch?-3:-2), hipN=front?(tw>>1)-3:(ch?3:2);
   const aw=4, lw=ch?6:5, ins=ch?(r=>r===0||r===th-1?2:(r===1||r===th-2?1:0)):(r=>0);
+  if(S.wings){ /* 초파리: 반투명 날개 한 쌍. 옆모습은 등 뒤로 눕고(걸을 때 살짝 들썩), 공중·날갯짓(flap)에서는 위로 세워 빠르게 파닥인다. 앞모습은 양어깨 위로 펼친다 */
+    const fast=P.air||P.flap; const ph=fast?(t&1):((t>>3)&1); const big=P.flap?1.25:1; g.save(); g.lineWidth=1;
+    const wing=(cx,cy,rx,ry,rot)=>{ g.fillStyle='rgba(222,240,255,.72)'; g.strokeStyle='rgba(100,140,185,.95)'; g.beginPath(); g.ellipse(cx,cy,rx,ry,rot,0,Math.PI*2); g.fill(); g.stroke(); g.strokeStyle='rgba(130,170,215,.7)'; g.beginPath(); g.moveTo(cx-Math.cos(rot)*rx*0.85,cy-Math.sin(rot)*rx*0.85); g.lineTo(cx+Math.cos(rot)*rx*0.85,cy+Math.sin(rot)*rx*0.85); g.stroke(); };
+    if(front){ for(const sd of [-1,1]){ const rot=sd*(fast?(ph?0.95:0.45):0.3); wing(sd*8*big,-20+up-(fast?3:0),7*big,3,-rot); } }
+    else if(fast){ const r1=ph?0.95:0.35, r2=ph?0.75:0.2; wing(-11,-23+up,8*big,2.6,r1); wing(-10,-20+up,7*big,2.2,r2); }
+    else { wing(-9,-18+up-(ph?1:0),7,2.5,0.18); wing(-8,-16+up,6,2,0.1); }
+    g.restore(); }
   /* 뒤쪽 팔 */ limb(g,shF,-13+up,arms[1][0],arms[1][1]+up,aw,S.arm,L); hand(arms[1][0],arms[1][1]+up);
   if(S.tail){ /* 라이언: 다리 대신 꼬리 토막 셋이 뒤로 끌린다 */ blob(g,-4,-4+up,4,3,S.leg,L); blob(g,-9,-3+up,3,2,S.leg2,L); blob(g,-13,-2,2,2,S.leg,L); }
   else { limb(g,hipF,-8+up,legs[1][0],legs[1][1]-3,lw,S.leg2,L); foot(legs[1][0],legs[1][1]); limb(g,hipN,-8+up,legs[0][0],legs[0][1]-3,lw,S.leg,L); foot(legs[0][0],legs[0][1]); }
@@ -178,7 +202,8 @@ const STYLE={
   shushu:{body:C.glove,belly:C.glove2,arm:C.skin,glove:C.glove,glove2:C.glove2,leg:C.skin,leg2:C.skin2,foot:C.hair2,belt:C.short},
   lion:{body:C.worm,stripe:C.worm2,arm:C.worm,hand:C.worm2,leg:C.worm,leg2:C.worm2,foot:C.worm2,tail:1},
   copter:{body:C.cop,belly:'#b5dcf2',arm:C.cop,hand:C.cop3,leg:C.cop,leg2:C.cop2,foot:C.cop2},
-  doom:{body:C.armor,belly:C.armor2,arm:C.armor,hand:C.helm,leg:C.armor3,leg2:C.armor3,foot:C.boot,emblem:C.ember,belt:C.boot}
+  doom:{body:C.armor,belly:C.armor2,arm:C.armor,hand:C.helm,leg:C.armor3,leg2:C.armor3,foot:C.boot,emblem:C.ember,belt:C.boot},
+  fly:{body:'#6b4a2e',belly:'#8c7a63',stripe:'#4b382e',arm:'#6b4a2e',hand:'#4b382e',leg:'#4b382e',leg2:'#3a2c22',foot:'#231d18',wings:1}
 };
 /* 주먹 팔: 방향키대로 앞·위·아래로 뻗는다 */
 function punchArm(A,h,ext,len){ const pd=h.pdy||0; if(pd<0) return A(4+Math.round(ext*8),2-Math.round(ext*22)); if(pd>0) return A(4+Math.round(ext*8),4+Math.round(ext*14)); return A(6+Math.round(ext*len),2-Math.round(ext*4)); }
@@ -197,7 +222,7 @@ function poseOf(h,t,f){
     const c=Math.floor(h.climbT/8)%2; const inw=-(h.side||1)*(h.dir||1); /* 바라보는 기준으로 벽이 있는 쪽(+1 앞, -1 뒤) */
     P.view='front'; P.arm=[A(inw*8,c?-14:-6),A(inw*5,c?-6:-14)]; P.leg=[[inw*4,c?-4:0],[inw*1,c?0:-4]]; P.lean=inw*2;
     if(h.punchT>0){ const k=1-h.punchT/16; const ext=k<0.6?k/0.6:1-(k-0.6)/0.4*0.4; P.arm=[punchArm(A,h,ext,(h.pdx||h.dir)===h.side?34:20),A(inw>0?-6:6,-8)]; /* 옆 건물 쪽은 골목 너머까지 팔을 뻗는다 */ P.mouth=0.4; P.leg=[[inw*4,-2],[inw*1,0]]; P.lean=0; }
-  } else if(h.state==='air'){ const fly=h.hang>1.5; P.arm=fly?[A(9,-6),A(-9,-6)]:[A(8,-8),A(-6,0)]; P.leg=fly?[[3,2],[-3,2]]:[[5,-3],[-4,1]]; P.mouth=0.3; P.eyes=fly?'open':'wide'; }
+  } else if(h.state==='air'){ const fly=h.hang>1.5; P.air=true; P.flap=(h.flapT||0)>0; P.arm=fly?[A(9,-6),A(-9,-6)]:[A(8,-8),A(-6,0)]; P.leg=fly?[[3,2],[-3,2]]:[[5,-3],[-4,1]]; P.mouth=0.3; P.eyes=fly?'open':'wide'; if(P.flap){ P.head=-1; P.mouth=0.6; } }
   else { /* 땅 */
     if(h.punchT>0){ const k=1-h.punchT/16; const ext=k<0.5?k/0.5:1-(k-0.5)/0.5*0.5; P.arm=[punchArm(A,h,ext,22),A(-6,10)]; P.lean=h.pdy?0:Math.round(ext*3); P.mouth=0.6; P.leg=[[5,0],[-4,0]]; }
     else if(h.walkT>0){ P.leg=[[Math.round(2+walk*4),0],[Math.round(-2+w2*4),0]]; P.arm=[A(Math.round(3+w2*5),13),A(Math.round(-1+walk*5),13)]; P.body=Math.abs(walk)>0.7?-1:0; }
@@ -294,14 +319,32 @@ function heli(g,e,t){ g.save(); g.translate(Math.round(e.x),Math.round(e.y)); if
   blob(g,0,-3,10,5,C.heli,L); blob(g,-1,-5,7,2,C.heli3); px(g,-8,-1,16,1,C.heli2); px(g,3,-6,6,3,C.glass); px(g,4,-6,2,1,'#e4f4fb'); px(g,8,-5,1,2,L); px(g,-3,-6,1,5,C.heli2); px(g,-3,-4,1,1,L); /* 몸통·유리·문 */
   px(g,-22,-5,14,1,L); px(g,-22,-1,14,1,L); px(g,-21,-4,13,3,C.heli); px(g,-21,-3,13,1,C.heli2); px(g,-23,-11,3,8,C.heli2); px(g,-22,-10,1,6,C.heli3); px(g,-24,-7+((t>>1)&1)*2,6,1,C.rotor); /* 꼬리 붐·수직 날개·꼬리 날개 */
   px(g,-7,3,14,1,C.heli2); px(g,-5,2,1,1,C.heli2); px(g,4,2,1,1,C.heli2); px(g,-7,4,14,1,'rgba(0,0,0,.3)'); /* 착륙 활대 */ g.restore(); }
+/* 트램: 두 량짜리 노면전차. 앞 량은 진행 방향(dir) 쪽, 뒤 량은 연결기 뒤. 각 량 26px, 사이 2px */
+function tram(g,e,t){ g.save(); g.translate(Math.round(e.x),Math.round(e.y)); if(e.dir<0) g.scale(-1,1); const L=C.line; const body='#2e8b57', body2='#216b43', hi='#8fd9a8', cream='#f1e9c9';
+  for(const car of [0,1]){ const ox=car===0?2:-26; /* 앞 량 x: 2..28 · 뒤 량 x: -26..0 */
+    px(g,ox-1,-14,28,1,L); px(g,ox-1,-1,28,1,L); px(g,ox-1,-13,1,12,L); px(g,ox+26,-13,1,12,L); /* 윤곽 */
+    px(g,ox,-13,26,12,body); px(g,ox,-13,26,1,hi); px(g,ox,-6,26,1,cream); px(g,ox,-5,26,4,body2);
+    for(let i=0;i<4;i++){ px(g,ox+2+i*6,-11,4,4,C.glass); px(g,ox+2+i*6,-11,2,1,'#e4f4fb'); px(g,ox+1+i*6,-11,1,4,body2); } /* 창 넷 */
+    if(car===0){ px(g,ox+24,-11,1,4,'#fff2b0'); px(g,ox+21,-8,2,3,body2); } else { px(g,ox,-11,1,4,'#ff5a5a'); } /* 전조등·후미등 */
+    px(g,ox+4,-2,5,3,C.wheel); px(g,ox+17,-2,5,3,C.wheel); px(g,ox+5,-1,3,1,'#8a8d92'); px(g,ox+18,-1,3,1,'#8a8d92'); }
+  px(g,0,-8,2,3,L); /* 연결기 */
+  /* 팬터그래프: 앞 량 지붕 위의 집전 장치. 흔들림을 t로 */ const pw=(t>>3)&1; px(g,9,-17,8,1,L); px(g,11,-16,1,2,L); px(g,14,-16+pw,1,2,L); px(g,8,-18,10,1,'#5a5a5a');
+  g.restore(); }
 function shot(g,s){ if(s.kind==='bullet') px(g,s.x-1,s.y-1,2,2,C.bullet); else if(s.kind==='shell'){ px(g,s.x-2,s.y-1,4,3,C.shell); px(g,s.x-3,s.y,1,1,C.fire); } else { px(g,s.x-3,s.y-1,6,3,C.rocket); px(g,s.x-5-(s.t&1),s.y-1,2,3,C.fire); px(g,s.x+3,s.y,1,1,C.teeth); } }
+const BURSTS={ soldier:{pts:4,r:7,inner:0.4,spin:1.2,c1:'#ffd36a',c2:'#fff'}, taxi:{pts:6,r:12,inner:0.5,spin:1.0,c1:'#ffb13a',c2:'#ffe27a'}, cop:{pts:5,r:13,inner:0.45,spin:-1.4,c1:'#4aa3ff',c2:'#ff5a5a'},
+  tram:{pts:8,r:17,inner:0.55,spin:0.8,c1:'#8fd9a8',c2:'#fff6c9'}, tank:{pts:9,r:16,inner:0.5,spin:0.6,c1:'#ff7a3a',c2:'#ffd36a'}, heli:{pts:7,r:15,inner:0.42,spin:-1.0,c1:'#ff5a3a',c2:'#ffe27a'} };
+function star(g,cx,cy,n,r1,r2,rot,col){ g.fillStyle=col; g.beginPath(); for(let i=0;i<n*2;i++){ const r=(i&1)?r2:r1, ang=rot+i*Math.PI/n; const X=cx+Math.cos(ang)*r, Y=cy+Math.sin(ang)*r; if(i===0) g.moveTo(X,Y); else g.lineTo(X,Y); } g.closePath(); g.fill(); }
 function fx(g,x){ const a=x.t;
   if(x.k==='dust'){ for(let i=0;i<5;i++){ const ang=i*1.26+x.x*0.1; const r=a*0.8+2; px(g,x.x+Math.cos(ang)*r-1,x.y+Math.sin(ang)*r*0.6-a*0.3,3-(a>10?1:0),2,i%2?C.dust:C.dust2); } }
   else if(x.k==='spark'){ for(let i=0;i<4;i++){ const ang=i*1.57+0.5; px(g,x.x+Math.cos(ang)*a*0.9,x.y+Math.sin(ang)*a*0.9,2,1,C.spark); } }
   else if(x.k==='boom'){ const r=Math.min(14,a*1.2); blob(g,x.x,x.y,r,r*0.8,a<10?C.boom2:C.boom); if(a>6) blob(g,x.x,x.y-2,r*0.5,r*0.4,a<16?C.boom:C.dust2); }
+  else if(x.k==='burst'){ /* 별 모양 폭발: 기물 종류(n)마다 꼭짓점 수·색이 다르다. 커지며 돌다가 옅어진다 */
+    const B=BURSTS[x.n]||BURSTS.taxi; const life=34, p=Math.min(1,a/life); const r=B.r*(0.3+0.9*Math.sin(p*Math.PI*0.5)); const rot=x.x*0.01+p*B.spin;
+    g.save(); g.globalAlpha=Math.max(0,1-Math.pow(p,2.2)); star(g,x.x,x.y,B.pts,r,r*B.inner,rot,p<0.35?B.c2:B.c1); if(a>3) star(g,x.x,x.y,B.pts,r*0.55,r*0.55*B.inner,-rot*1.3,p<0.6?'#fff7d6':B.c2); g.restore(); }
+  else if(x.k==='shard'){ /* 파편 줄기: 별 폭발에서 사방으로 튀는 선 */ const ang=(x.n||0)*0.9, r0=a*1.6, r1=a*1.6+4; g.save(); g.globalAlpha=Math.max(0,1-a/26); g.strokeStyle=(a&2)?C.boom2:'#fff'; g.lineWidth=1; g.beginPath(); g.moveTo(x.x+Math.cos(ang)*r0,x.y+Math.sin(ang)*r0*0.8); g.lineTo(x.x+Math.cos(ang)*r1,x.y+Math.sin(ang)*r1*0.8); g.stroke(); g.restore(); }
   else if(x.k==='cloud'){ /* 분진: 커지며 옅어지는 뭉게구름 */ const r=4+a*0.45, al=Math.max(0,1-a/44); g.save(); g.globalAlpha=al*0.85; blob(g,x.x,x.y-a*0.35,r,r*0.7,C.dust); g.globalAlpha=al*0.6; blob(g,x.x-r*0.5,x.y-a*0.25+2,r*0.6,r*0.45,C.dust2); blob(g,x.x+r*0.55,x.y-a*0.4,r*0.55,r*0.4,'#e8dfcc'); g.restore(); }
   else if(x.k==='chunk'){ /* 벽돌 조각 */ const col=(x.wall||C.dust2); const sz=x.sz||2; px(g,x.x,x.y-sz,sz,sz,col); if(sz>2) px(g,x.x,x.y-sz,1,1,'#fff6'); }
   else if(x.k==='glass'){ /* 유리 조각 */ px(g,x.x,x.y-1,1,1,(a>>1)&1?'#d8f1fa':'#7eb6cc'); } }
 
-root.Sprites={C,px,blob,limb,person,drawMonster,drawIdle,poseOf,soldier,car,tank,heli,shot,fx};
+root.Sprites={C,px,blob,limb,person,drawMonster,drawIdle,poseOf,soldier,car,tank,heli,tram,shot,fx,star,BURSTS};
 })(typeof window!=='undefined'?window:module.exports);

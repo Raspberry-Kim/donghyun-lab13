@@ -8,6 +8,7 @@ function play(formId,seed,maxFrames){
     const h=S.hero; k.left=k.right=k.up=k.down=k.jumpPressed=k.punchPressed=false;
     const b=S.builds.find(b=>b.state==='up');
     if(h.state==='ride'){ /* 무너지기 시작하면 바로 뛰어내린다(원작 규칙: 안 뛰면 주저앉는다) */ k.jumpPressed=true; rides++; }
+    else if((h.state==='climb'||h.state==='roof')&&S.builds[h.bld]&&S.builds[h.bld].state==='warn'&&S.builds[h.bld].warn>30){ /* 붕괴 예고(금·흔들림)를 보면 뛰어내린다 */ k.jumpPressed=true; rides++; }
     else if(h.state==='sit'){ sits++; }
     else if(b){
       /* 왼쪽 옆벽에 붙어 0열을 위층부터 친다. 0열이 모두 구멍이면(절반) 무너진다. 1층은 맨 아래에서 아래 주먹 */
@@ -32,6 +33,6 @@ function play(formId,seed,maxFrames){
   }
   return {S,frames,punches,eats,rides,sits};
 }
-const forms=[1,2,3,4,5]; let line=[];
+const forms=[1,2,3,4,5,6]; let line=[];
 for(const f of forms){ const r=play(f,100+f,60*60*40); const S=r.S; line.push(`${E.FORMS[f-1].name}: ${S.status} 도시 ${S.city} 점수 ${S.score} 체력 ${Math.round(S.hero.stam)} 목숨 ${S.lives} 주먹 ${r.punches} 먹음 ${r.eats} 탑승 ${r.rides} 주저앉음 ${r.sits} 프레임 ${r.frames} (${(r.frames/3600).toFixed(1)}분)`); }
 console.log(line.join('\n'));

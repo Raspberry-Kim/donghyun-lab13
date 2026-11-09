@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it using the metadata below."
 title: "Donghyunram (동현램): a single-player city-smashing laboratory in the manner of Rampage, with the monster, starting city and lives set through the esoteric language Donghyun-lang"
 type: software
-version: "0.12"
+version: "0.15"
 doi: "10.5281/zenodo.24068304"
 date-released: "2026-11-09"
 authors:
@@ -20,14 +20,17 @@ abstract: >-
   Destination Software, 2005): a monster climbs buildings, punches windows
   until the building collapses, eats people and vehicles to regain stamina,
   and moves on through twelve cities. Unlike the original it is strictly
-  single-player; the five monsters (Podong, Shushu, Lion, Tailcopter and
-  Doomguy, all characters of the Donghyun series) differ in strength,
-  toughness, reach, walking speed and fall speed; they share one simple
-  body template (only Podong is plump) and show their faces when climbing.
+  single-player; the six monsters (Shushu, Lion, Tailcopter, Doomguy,
+  Podong and Fruit fly, all characters of the Donghyun series) differ in
+  strength, toughness, reach, walking speed and fall speed (the fruit fly
+  can flap to stay airborne); they share one simple body template (only
+  Podong is plump) and show their faces when climbing. A building cracks
+  and shakes for about 1.7 seconds before it collapses, so the monster can
+  jump off; a two-car tram runs along the street among the vehicles.
   Stamina drains far more slowly and eating
   restores far more than in the original, so that long play near full
   stamina is the norm; the four eating animations are exaggerated. The
-  only settings, the monster (1-5), the starting city (1-12) and the number
+  only settings, the monster (1-6), the starting city (1-12) and the number
   of lives (1-9, 0 for unlimited), are chosen through a program written in
   the esoteric programming language Donghyun-lang. Input is keyboard,
   gamepad, mouse and touch (tap the monster to punch, tap a place to walk
