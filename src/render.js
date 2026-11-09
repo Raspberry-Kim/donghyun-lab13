@@ -31,9 +31,9 @@ function backdrop(g,S,t){
   /* 구름: 둥근 덩어리 셋을 겹친다 */
   for(let i=0;i<5;i++){ const cx=((i*83+t*0.06)%(W+70))-35, cy=18+(i*29)%44, s=0.8+(i%3)*0.3; const c1=night?'rgba(200,205,225,.55)':'rgba(255,255,255,.85)', c2=night?'rgba(170,178,205,.5)':'rgba(236,243,250,.85)';
     SP.blob(g,cx,cy+2,Math.round(13*s),Math.round(3*s),c2); SP.blob(g,cx-4*s,cy,Math.round(6*s),Math.round(4*s),c1); SP.blob(g,cx+4*s,cy-1,Math.round(7*s),Math.round(5*s),c1); SP.blob(g,cx+11*s,cy+1,Math.round(5*s),Math.round(3*s),c1); }
-  /* 먼 도시 두 겹: 뒤는 옅고 낮게, 앞은 짙고 창이 보인다 */
-  g.save(); g.globalAlpha=0.5; for(let i=0;i<15;i++){ const h=hsh(i,3,S.city); const bw=14+(h%14), bh=14+((h>>4)%26), bx=i*23-6+((h>>8)%7); px(g,bx,GROUND-bh-6,bw,bh+6,Cc.fog); if((h>>12)&1) px(g,bx+bw/2-1,GROUND-bh-12,2,6,Cc.fog); } g.restore();
-  for(let i=0;i<13;i++){ const h=hsh(i,5,S.city); const bw=16+(h%12), bh=8+((h>>4)%16), bx=i*26-4+((h>>8)%9); px(g,bx,GROUND-bh-6,bw,bh+6,Cc.fog); px(g,bx,GROUND-bh-6,bw,1,'rgba(255,255,255,.18)');
+  /* 먼 풍경: 동네마다 다른 랜드마크(Cc.bg)를 안개색으로, 그 앞에 낮은 먼 건물 한 겹 */
+  scenery(g,S,Cc,t,night);
+  for(let i=0;i<13;i++){ if(i%3===1) continue; const h=hsh(i,5,S.city); const bw=14+(h%10), bh=4+((h>>4)%8), bx=i*26-4+((h>>8)%9); px(g,bx,GROUND-bh-6,bw,bh+6,Cc.fog); px(g,bx,GROUND-bh-6,bw,1,'rgba(255,255,255,.18)');
     for(let r=0;r<Math.floor(bh/6);r++) for(let c=0;c<Math.floor(bw/5);c++){ const on=hsh(i,r,c+S.city)%5===0; if(night?on:((r+c)%2===0)) px(g,bx+2+c*5,GROUND-bh-2+r*6,2,2,night?(on?'rgba(255,220,140,.9)':'rgba(255,255,255,.1)'):'rgba(255,255,255,.22)'); } }
   /* 보도·연석·길 */
   px(g,0,GROUND-6,W,6,'#8a8d92'); px(g,0,GROUND-6,W,1,'#b9bcc1'); for(let x=0;x<W;x+=8) px(g,x,GROUND-5,1,5,'#7a7d82'); px(g,0,GROUND-1,W,1,'#5e6166');
@@ -46,6 +46,47 @@ function backdrop(g,S,t){
   for(const lx of lamps){ px(g,lx,GROUND-28,1,22,'#3a3d44'); px(g,lx-1,GROUND-7,3,1,'#2b2d33'); px(g,lx,GROUND-29,3,1,'#3a3d44'); px(g,lx+2,GROUND-31,3,3,night?'#ffe6a3':'#d8dde3'); if(night){ g.save(); g.globalAlpha=0.18; SP.blob(g,lx+3,GROUND-28,7,5,'#ffe6a3'); g.restore(); } }
 }
 
+/* ---------- 지붕 양식(동네마다) ---------- 변형은 b.roofV(0..3)로 조금씩 다르게 */
+function roofDeco(g,b,c,top,style,night){
+  const x0=b.x, w=b.w, cx=x0+Math.floor(w/2), v=b.roofV|0, h=hsh(b.i,b.floors,9);
+  const tile='#4a4f5a', tile2='#6a7080', wood='#8a5a3a', stone='#d9cdb8', stone2='#b9ad98';
+  const tank=()=>{ px(g,x0+3,top-9,6,5,c.roof2); px(g,x0+3,top-9,6,1,c.trim); px(g,x0+4,top-4,1,2,c.roof); px(g,x0+7,top-4,1,2,c.roof); };
+  const ac=()=>{ px(g,x0+w-10,top-5,6,3,c.roof2); px(g,x0+w-9,top-4,4,1,c.roof); };
+  const ant=()=>{ px(g,x0+w-5,top-10,1,8,c.roof); px(g,x0+w-7,top-8,5,1,c.roof); };
+  switch(style){
+    case 'tank': /* 물탱크·실외기·안테나(원래 양식) */ if(v!==1) tank(); if(v!==2||w>40) ac(); if(v>=2) ant(); if(w>=60&&(h&1)){ px(g,cx-5,top-6,10,4,c.roof2); px(g,cx-4,top-5,8,2,c.roof); } break;
+    case 'sign': { /* 옥상 간판: 기둥 둘에 판 하나. 글자 대신 색 띠 */ const sw=Math.min(w-4,14+v*4); const sx=cx-Math.floor(sw/2); px(g,sx+2,top-6,1,4,c.roof); px(g,sx+sw-3,top-6,1,4,c.roof); px(g,sx,top-11,sw,6,'#1a1620'); const pal=[['#f2b705','#e5483a'],['#5fb44a','#fff'],['#4aa3ff','#f2b705'],['#e5483a','#fff']][v]; px(g,sx+1,top-10,sw-2,4,pal[0]); for(let i=0;i<Math.floor((sw-4)/3);i++) px(g,sx+2+i*3,top-9+(i&1),2,1,pal[1]); if(night) px(g,sx+1,top-10,sw-2,1,'rgba(255,255,255,.5)'); if(w>=60) ac(); break; }
+    case 'spire': { /* 첨탑: 가운데 단 위에 뾰족한 침과 구슬 */ px(g,cx-3,top-5,7,3,c.roof2); px(g,cx-2,top-7,5,2,c.roof); px(g,cx,top-11,1,4,c.trim); px(g,cx-1,top-12,3,1,c.trim); px(g,cx,top-13,1,1,night?'#ffe6a3':'#e5483a'); if(v&1) ac(); if(v>=2&&w>=40) tank(); break; }
+    case 'pediment': { /* 박공(법원식): 돌색 삼각 박공과 작은 기둥 */ const pw=Math.min(w,16+v*6); const sx=cx-Math.floor(pw/2); for(let i=0;i<4;i++){ const ww=pw-i*Math.floor(pw/4); px(g,cx-Math.floor(ww/2),top-3-i,ww,1,i===3?stone:stone2); } px(g,sx,top-3,pw,1,stone); px(g,sx+1,top-2,1,2,stone); px(g,sx+pw-2,top-2,1,2,stone); if(w>=60){ px(g,x0+2,top-4,3,2,stone2); px(g,x0+w-5,top-4,3,2,stone2); } break; }
+    case 'hanok': case 'hanok2': { /* 한옥 기와: 좌우로 3px 내민 처마, 겹친 기와 줄, 양 끝은 살짝 들린다. hanok2는 용마루 장식 */ const t1=style==='hanok2'?'#3f4a56':tile, t2=style==='hanok2'?'#7a8898':tile2; px(g,x0-3,top-3,w+6,2,t1); px(g,x0-2,top-5,w+4,2,t1); px(g,x0-1,top-7,w+2,2,t1); px(g,x0+1,top-8,w-2,1,t1); for(let x=x0-2;x<x0+w+2;x+=3) px(g,x,top-2,1,1,t2); for(let x=x0-1;x<x0+w+1;x+=3) px(g,x+1,top-4,1,1,t2); px(g,x0-4,top-4,1,2,t1); px(g,x0+w+3,top-4,1,2,t1); px(g,x0-3,top-1,w+6,1,wood); if(style==='hanok2'){ px(g,cx-4,top-9,9,1,t2); px(g,cx-5,top-10,2,1,t2); px(g,cx+4,top-10,2,1,t2); } else if(v&1){ px(g,cx-1,top-9,3,1,t2); } break; }
+    case 'cross': { /* 병원: 흰 상자에 빨간 십자, 넓은 건물은 헬기장 H */ px(g,x0+2,top-8,8,6,'#f4f1ea'); px(g,x0+5,top-7,2,4,'#e5483a'); px(g,x0+4,top-6,4,2,'#e5483a'); if(w>=60){ px(g,x0+w-15,top-3,12,1,'#f4f1ea'); px(g,x0+w-14,top-4,1,2,'#f4f1ea'); px(g,x0+w-5,top-4,1,2,'#f4f1ea'); px(g,x0+w-10,top-4,1,2,'#f4f1ea'); } else if(v&1) ac(); if(v>=2) ant(); break; }
+    case 'dome': { /* 둥근 지붕: 가운데 반구와 꼭대기 장식 */ const r=Math.min(8,Math.floor(w/2)-1); g.fillStyle=c.roof2; g.beginPath(); g.arc(cx+0.5,top-2,r,Math.PI,0); g.fill(); g.fillStyle=c.trim; g.beginPath(); g.arc(cx+0.5,top-2,r-2,Math.PI*1.15,Math.PI*1.55); g.lineTo(cx+0.5,top-2); g.fill(); px(g,cx,top-2-r-2,1,2,c.trim); if(w>=60&&(v&1)){ px(g,x0+2,top-4,3,2,c.roof2); px(g,x0+w-5,top-4,3,2,c.roof2); } break; }
+    case 'wave': { /* 물결 지붕(강변): 2px 높이 물결 띠 */ const cw='#2b7fb0', cw2='#9bd0f0'; for(let x=x0-1;x<x0+w+1;x++){ const y=Math.round(Math.sin((x-x0)/3+v)*1.5); px(g,x,top-5+y,1,3,cw); px(g,x,top-5+y,1,1,cw2); } if(w>=60) ac(); break; }
+    case 'glass': { /* 유리탑: 옅은 유리 난간과 옥상 유리 상자 */ px(g,x0,top-5,w,3,'rgba(160,210,240,.55)'); px(g,x0,top-5,w,1,'#e4f4fb'); for(let x=x0+3;x<x0+w;x+=6) px(g,x,top-5,1,3,'#9bb7c8'); if(w>=40){ px(g,cx-5,top-9,10,4,'#7eb6cc'); px(g,cx-5,top-9,10,1,'#e4f4fb'); px(g,cx-4,top-8,2,2,'#e4f4fb'); } if(v&1) ant(); break; }
+    case 'gable': { /* 박공 지붕(주택): 벽돌색 삼각 지붕과 굴뚝 */ const rc=['#9a4a3a','#7a5a4a','#4a5a7a','#6a4a3a'][v]; const hh=Math.min(7,Math.floor(w/4)+2); for(let i=0;i<hh;i++){ const inset=Math.floor(i*(w/2)/hh); px(g,x0-2+inset,top-2-i,w+4-inset*2,1,i===hh-1?'#1a1620':rc); } px(g,x0-2,top-2,w+4,1,'#1a1620'); px(g,x0+w-8,top-2-hh-1,3,hh-1,'#6a6a72'); px(g,x0+w-9,top-2-hh-2,5,1,'#8a8a92'); break; }
+    default: tank(); ac(); } }
+
+/* ---------- 동네 풍경(배경) ---------- 모두 안개색 fog의 밝기 변형으로 그려 앞 건물과 구별한다 */
+function shade(hex,k){ const n=parseInt(hex.slice(1),16); const r=(n>>16)&255,gg=(n>>8)&255,b=n&255; const f=(c)=>Math.max(0,Math.min(255,Math.round(k>0?c+(255-c)*k:c*(1+k)))); return '#'+[f(r),f(gg),f(b)].map(v=>v.toString(16).padStart(2,'0')).join(''); }
+function scenery(g,S,Cc,t,night){
+  const F=Cc.fog, F1=shade(F,0.3), F2=shade(F,-0.3), F3=shade(F,0.55), base=GROUND-6; const win=night?'rgba(255,220,140,.85)':'rgba(255,255,255,.3)';
+  const slab=(x,w,h,col,grid)=>{ px(g,x,base-h,w,h,col); if(grid) for(let r=0;r<Math.floor(h/6)-1;r++) for(let c=0;c<Math.floor(w/5);c++) if(hsh(x,r,c)%3) px(g,x+2+c*5,base-h+3+r*6,2,2,win); };
+  const peak=(x,w,h,col)=>{ g.fillStyle=col; g.beginPath(); g.moveTo(x,base); g.lineTo(x+w*0.45,base-h); g.lineTo(x+w*0.55,base-h+2); g.lineTo(x+w*0.62,base-h); g.lineTo(x+w,base); g.closePath(); g.fill(); };
+  switch(Cc.bg){
+    case 'apart': /* 아파트 단지: 긴 판상형 넷과 동 번호판 */ for(let i=0;i<4;i++){ const x=18+i*78, h=44+(i%2)*12; slab(x,30,h,i%2?F:F2,true); px(g,x,base-h-2,30,2,F1); px(g,x+11,base-h+2,8,5,'#f4f1ea'); px(g,x+13,base-h+4,4,1,F2); } break;
+    case 'wheel': { /* 관람차: 천천히 돈다 */ const cx=236, cy=base-44, r=30; g.strokeStyle=F2; g.lineWidth=1.2; g.beginPath(); g.arc(cx,cy,r,0,Math.PI*2); g.stroke(); g.beginPath(); g.arc(cx,cy,r-4,0,Math.PI*2); g.stroke(); const rot=t*0.004; for(let i=0;i<10;i++){ const a=rot+i*Math.PI/5; g.beginPath(); g.moveTo(cx,cy); g.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r); g.stroke(); px(g,cx+Math.cos(a)*r-2,cy+Math.sin(a)*r-2,5,4,i%2?'#e5483a':'#f2b705'); } g.beginPath(); g.moveTo(cx-14,base); g.lineTo(cx,cy); g.lineTo(cx+14,base); g.stroke(); px(g,cx-2,cy-2,5,5,F3); slab(40,28,30,F,true); slab(100,22,22,F2,true); break; }
+    case 'tower': { /* 남산과 N서울타워 */ g.fillStyle=F2; g.beginPath(); g.moveTo(110,base); g.quadraticCurveTo(190,base-78,270,base); g.fill(); g.fillStyle=F; g.beginPath(); g.moveTo(0,base); g.quadraticCurveTo(70,base-40,160,base); g.fill(); const tx=190; px(g,tx-1,base-138,3,74,F1); px(g,tx-7,base-120,15,7,F3); px(g,tx-6,base-113,13,3,F2); px(g,tx-5,base-126,11,3,F3); px(g,tx,base-146,1,8,F2); px(g,tx-1,base-147,3,1,(t>>4)&1?'#ff5a5a':F3); px(g,tx-9,base-66,19,3,F2); break; }
+    case 'court': { /* 법원 청사(기둥·박공)와 예술의전당 갓 지붕 */ slab(36,72,34,F,true); px(g,30,base-38,84,4,F1); for(let i=0;i<7;i++) px(g,38+i*11,base-34,3,28,F3); g.fillStyle=F1; g.beginPath(); g.moveTo(30,base-38); g.lineTo(72,base-52); g.lineTo(114,base-38); g.fill(); slab(190,70,24,F2,true); g.fillStyle=F1; g.beginPath(); g.ellipse(225,base-26,46,8,0,Math.PI,0); g.fill(); px(g,217,base-40,16,8,F2); px(g,223,base-44,4,4,F3); break; }
+    case 'palace': { /* 북악산 두 봉우리 앞의 궁궐 문(이층 기와) */ peak(70,150,74,F2); peak(170,130,56,F); const hx=118, hw=84; for(let k=0;k<2;k++){ const y=base-16-k*16, w=hw-k*16, x=hx+k*8; px(g,x,y-4,w,4,F2); px(g,x-5,y-8,w+10,4,F2); px(g,x-3,y-11,w+6,3,F2); px(g,x-6,y-9,1,3,F2); px(g,x+w+5,y-9,1,3,F2); px(g,x+2,y-18+((k===1)?2:0),w-4,10,F1); if(k===0) for(let i=0;i<5;i++) px(g,x+8+i*16,y-14,3,10,F2); } px(g,hx+34,base-10,16,10,F2); break; }
+    case 'stadium': { /* 야구장: 넓은 그릇 모양과 조명탑 넷 */ g.fillStyle=F; g.beginPath(); g.ellipse(160,base-10,110,22,0,Math.PI,0); g.fill(); g.fillStyle=F2; g.beginPath(); g.ellipse(160,base-14,90,14,0,Math.PI,0); g.fill(); px(g,50,base-20,220,2,F1); for(const lx of [60,120,200,260]){ px(g,lx,base-62,2,46,F1); px(g,lx-5,base-66,12,5,F2); for(let i=0;i<5;i++) px(g,lx-4+i*2,base-65,1,2,night?'#fff6c9':F3); if(night){ g.save(); g.globalAlpha=0.12; SP.blob(g,lx+1,base-56,14,8,'#fff6c9'); g.restore(); } } break; }
+    case 'hospital': { /* 대학병원: 큰 본관과 낮은 별관, 지붕의 십자 */ slab(96,96,52,F,true); px(g,96,base-54,96,2,F1); slab(50,44,28,F2,true); slab(194,52,34,F2,true); px(g,136,base-66,14,12,'#f4f1ea'); px(g,142,base-64,3,8,'#e5483a'); px(g,139,base-61,9,3,'#e5483a'); px(g,100,base-46,88,1,'#e5483a'); break; }
+    case 'mountain': { /* 북한산: 바위 봉우리 셋, 꼭대기는 화강암빛 */ peak(10,170,88,F2); peak(130,130,70,F); peak(220,120,56,F2); g.fillStyle=F3; g.beginPath(); g.moveTo(74,base-80); g.lineTo(86,base-88); g.lineTo(98,base-78); g.closePath(); g.fill(); g.beginPath(); g.moveTo(180,base-62); g.lineTo(188,base-70); g.lineTo(196,base-60); g.closePath(); g.fill(); break; }
+    case 'bridge': { /* 반포대교: 이층 다리와 교각, 무지개분수 물줄기 */ px(g,0,base-52,W,4,F2); px(g,0,base-48,W,1,F1); px(g,0,base-36,W,4,F2); px(g,0,base-32,W,1,F1); for(let x=14;x<W;x+=46){ px(g,x,base-32,7,32,F2); px(g,x+1,base-48,5,12,F2); } for(let x=0;x<W;x+=6) px(g,x,base-55,3,1,F1); for(let x=20;x<W;x+=46) for(let i=0;i<6;i++){ const a=(t*0.02+i*0.17+x*0.01)%1; const fx=x+6+i*5+a*4, fy=base-31+a*a*22; px(g,fx,fy,1,2,night?['#ff8fa3','#8fd9ff','#fff6a3'][i%3]:'rgba(255,255,255,.65)'); } for(let i=0;i<7;i++) px(g,6+i*48,base-30,2,2,win); break; }
+    case 'glass': { /* 강남 유리탑: 길쭉한 판 셋, 하나는 지붕이 비스듬하다 */ slab(60,24,70,F2,false); for(let y=0;y<70;y+=4) px(g,60,base-70+y,24,1,F1); slab(130,34,92,F,false); for(let y=0;y<92;y+=4) px(g,130,base-92+y,34,1,F1); g.fillStyle=F; g.beginPath(); g.moveTo(130,base-92); g.lineTo(164,base-104); g.lineTo(164,base-92); g.fill(); slab(214,26,78,F2,false); for(let x=0;x<26;x+=4) px(g,214+x,base-78,1,78,F1); if(night) for(let i=0;i<30;i++){ const h=hsh(i,21,3); px(g,[62,132,216][i%3]+(h%20),base-80+((h>>6)%70),2,1,'rgba(255,220,140,.8)'); } break; }
+    case 'hillside': { /* 주택 언덕: 비탈을 따라 집들이 층층이 */ g.fillStyle=F2; g.beginPath(); g.moveTo(0,base); g.lineTo(0,base-30); g.quadraticCurveTo(160,base-96,W,base-40); g.lineTo(W,base); g.fill(); for(let i=0;i<9;i++){ const x=14+i*34, hy=base-30-Math.round(Math.sin((x/W)*Math.PI)*58)+8; px(g,x,hy,16,10,F); px(g,x+1,hy-4,14,4,i%2?'#9a4a3a':F1); px(g,x+3,hy+2,3,3,win); px(g,x+10,hy+2,3,3,win); } break; }
+    case 'valley': { /* 계곡: 양쪽 비탈 사이로 물줄기, 멀리 향로봉 */ peak(100,120,68,F2); g.fillStyle=F; g.beginPath(); g.moveTo(0,base); g.lineTo(0,base-70); g.lineTo(60,base-60); g.lineTo(140,base); g.fill(); g.beginPath(); g.moveTo(W,base); g.lineTo(W,base-64); g.lineTo(270,base-56); g.lineTo(180,base); g.fill(); for(let i=0;i<12;i++){ const y=base-28+i*2.4, w=4+i*1.4; px(g,160-w/2+Math.sin(i+t*0.03)*1.5,y,w,1,night?'#8fb5d9':'#cfe6f5'); } g.fillStyle=F3; g.beginPath(); g.moveTo(150,base-62); g.lineTo(160,base-68); g.lineTo(170,base-60); g.closePath(); g.fill(); break; }
+    default: for(let i=0;i<8;i++){ const h=hsh(i,3,S.city); slab(i*40+((h>>8)%7),20+(h%12),20+((h>>4)%24),i%2?F:F2,true); } } }
+
 /* ---------- 건물 ---------- */
 function rubble(g,b,c){
   px(g,b.x-3,GROUND-6,b.w+6,6,c.wall2); px(g,b.x-1,GROUND-9,b.w+2,3,c.wall); px(g,b.x+3,GROUND-12,b.w-6,3,c.wall); px(g,b.x+8,GROUND-14,b.w-18,2,c.wall3);
@@ -57,7 +98,7 @@ function rubble(g,b,c){
 /* 모서리가 터진 폭: 층마다 3~6px로 들쭉날쭉 */
 function openW(b,r,col){ return 3+(hsh(b.i,r*5+col,13)%4); }
 function wallCell(g,b,c,r,col,cell,night){
-  const cx=b.x+col*CELL_W, cy=GROUND-(r+1)*FLOOR; const hole=cell.hp<=0; const cut=cell.cut||0; const edgeL=col===0, edgeR=col===COLS-1;
+  const cx=b.x+col*CELL_W, cy=GROUND-(r+1)*FLOOR; const hole=cell.hp<=0; const cut=cell.cut||0; const edgeL=col===0, edgeR=col===b.cols-1;
   const openL=hole&&(cut&2)&&edgeL, openR=hole&&(cut&2)&&edgeR; const ow=openW(b,r,col);
   const holeL=!edgeL&&b.cells[r][col-1].hp<=0, holeR=!edgeR&&b.cells[r][col+1].hp<=0; /* 옆 칸도 뚫렸으면 사이 벽을 두지 않아 구멍이 하나로 이어진다 */
   if(!hole){ px(g,cx,cy,CELL_W,FLOOR,c.wall); }
@@ -95,7 +136,7 @@ function wallCell(g,b,c,r,col,cell,night){
 }
 /* 구멍 안쪽: 어두운 실내, 바닥선, 삐죽한 가장자리, 철근, 그리고 안에 숨은 사람 */
 function holeCell(g,b,c,r,col,cell,t){
-  const cx=b.x+col*CELL_W, cy=GROUND-(r+1)*FLOOR; const cut=cell.cut||0; const edgeL=col===0, edgeR=col===COLS-1; const openL=(cut&2)&&edgeL, openR=(cut&2)&&edgeR; const ow=openW(b,r,col);
+  const cx=b.x+col*CELL_W, cy=GROUND-(r+1)*FLOOR; const cut=cell.cut||0; const edgeL=col===0, edgeR=col===b.cols-1; const openL=(cut&2)&&edgeL, openR=(cut&2)&&edgeR; const ow=openW(b,r,col);
   const holeL=!edgeL&&b.cells[r][col-1].hp<=0, holeR=!edgeR&&b.cells[r][col+1].hp<=0;
   const x0=openL?cx+ow:holeL?cx:cx+2, x1=openR?cx+CELL_W-ow:holeR?cx+CELL_W:cx+CELL_W-2; /* 터진 쪽은 하늘이 보이게 비우고, 옆 칸과 이어진 쪽은 경계 없이 잇는다 */
   px(g,x0,cy+1,x1-x0,FLOOR-3,GL.dark); px(g,x0+1,cy+2,x1-x0-2,4,GL.inner); px(g,x0,cy+FLOOR-4,x1-x0,1,GL.inner2); /* 뒷벽·바닥선 */
@@ -125,13 +166,13 @@ function building(g,S,b,t,night){
   /* 흔들림: 붕괴 예고 중에는 진행될수록 세게(±1→±2, 위아래도 조금), 무너질 때는 ±1 */
   let shake=b.state==='falling'?((b.fall&1)?1:-1):0, sy=0; if(warn){ const amp=warn<0.5?1:2; shake=((b.warn&1)?1:-1)*amp*((b.warn>>1)&1?1:0.5); sy=warn>0.6&&(b.warn%3===0)?1:0; }
   g.save(); g.translate(Math.round(shake),drop+sy); g.beginPath(); g.rect(0,-drop-sy,W,GROUND+drop+sy); g.clip();
-  for(let r=0;r<b.floors;r++) for(let col=0;col<COLS;col++) wallCell(g,b,c,r,col,b.cells[r][col],night);
+  for(let r=0;r<b.floors;r++) for(let col=0;col<b.cols;col++) wallCell(g,b,c,r,col,b.cells[r][col],night);
   if(warn){ cracks(g,b,top,warn); }
   /* 1층 가운데 문 */ const dx=b.x+Math.floor(b.w/2)-3; if(b.cells[0].every(cl=>cl.hp>0)){ px(g,dx,GROUND-12,7,12,c.trim); px(g,dx+1,GROUND-11,5,11,c.door); px(g,dx+2,GROUND-10,3,3,GL.a); px(g,dx+4,GROUND-6,1,1,c.trim); }
-  /* 옥상: 난간·물탱크·실외기·안테나(건물마다 다르게) */
+  /* 옥상: 난간 위에 동네 양식(Cc.roof)의 지붕 장식. 몬스터가 서는 높이(top) 위 10px 안에 둔다 */
   px(g,b.x-1,top-2,b.w+2,3,c.roof); px(g,b.x-1,top-2,b.w+2,1,c.roof2); px(g,b.x,top+1,b.w,1,c.wall2);
-  const h=hsh(b.i,b.floors,9); if(h&1){ px(g,b.x+5,top-9,6,5,c.roof2); px(g,b.x+5,top-9,6,1,c.trim); px(g,b.x+6,top-4,1,2,c.roof); px(g,b.x+9,top-4,1,2,c.roof); } if((h>>1)&1){ px(g,b.x+b.w-13,top-5,6,3,c.roof2); px(g,b.x+b.w-12,top-4,4,1,c.roof); } if((h>>2)&1){ px(g,b.x+b.w-5,top-10,1,8,c.roof); px(g,b.x+b.w-7,top-8,5,1,c.roof); } if(!(h&7)){ px(g,b.x+14,top-6,10,4,c.roof2); px(g,b.x+15,top-5,8,2,c.roof); }
-  for(let r=0;r<b.floors;r++) for(let col=0;col<COLS;col++){ const cell=b.cells[r][col]; if(cell.hp<=0) holeCell(g,b,c,r,col,cell,t); }
+  roofDeco(g,b,c,top,E.cityOf(S).roof,night);
+  for(let r=0;r<b.floors;r++) for(let col=0;col<b.cols;col++){ const cell=b.cells[r][col]; if(cell.hp<=0) holeCell(g,b,c,r,col,cell,t); }
   g.restore();
 }
 

@@ -1,4 +1,4 @@
-// 규칙 봇: 건물의 왼쪽 옆벽에 붙어 창을 위층부터 차례로 치며 도시를 부순다. 멈춤·값 깨짐이 없는지 본다.
+// 규칙 봇: 건물의 옆벽에 붙어 바깥 열의 창을 위층부터 차례로 치며 도시를 부순다(세 칸 건물은 양쪽 벽). 멈춤·값 깨짐이 없는지 본다.
 const E=require('../src/engine.js').Engine; const assert=require('assert');
 function play(formId,seed,maxFrames){
   const S=E.newGame({form:formId,seed}); const k={left:false,right:false,up:false,down:false,jump:false,jumpPressed:false,punch:false,punchPressed:false};
@@ -11,17 +11,18 @@ function play(formId,seed,maxFrames){
     else if((h.state==='climb'||h.state==='roof')&&S.builds[h.bld]&&S.builds[h.bld].state==='warn'&&S.builds[h.bld].warn>30){ /* 붕괴 예고(금·흔들림)를 보면 뛰어내린다 */ k.jumpPressed=true; rides++; }
     else if(h.state==='sit'){ sits++; }
     else if(b){
-      /* 왼쪽 옆벽에 붙어 0열을 위층부터 친다. 0열이 모두 구멍이면(절반) 무너진다. 1층은 맨 아래에서 아래 주먹 */
-      let found=null; for(let r=b.floors-1;r>=0&&!found;r--){ const cell=b.cells[r][0]; if(cell.hp>0||cell.person) found={r}; }
+      /* 옆벽에 붙어 바깥 열을 위층부터 친다. 두 칸 이하 건물은 0열만 다 뚫으면(절반) 무너지고, 세 칸 건물은 0열 다음 오른쪽 벽에서 마지막 열까지 뚫어야 한다(v0.20 가변 폭). 1층은 맨 아래에서 아래 주먹 */
+      let found=null, side=-1; const colOf=(sd)=>sd<0?0:b.cols-1;
+      for(const sd of (b.cols>=3?[-1,1]:[-1])){ for(let r=b.floors-1;r>=0&&!found;r--){ const cell=b.cells[r][colOf(sd)]; if(cell.hp>0||cell.person) found={r}; } if(found){ side=sd; break; } }
       if(!found){ if(h.state==='climb'){ k.down=true; } }
-      else if(h.state==='ground'){ const ex=b.x; if(Math.abs(h.x-ex)>2){ if(h.x<ex) k.right=true; else k.left=true; } else k.up=true; }
+      else if(h.state==='ground'){ const ex=side<0?b.x:b.x+b.w; if(Math.abs(h.x-ex)>2){ if(h.x<ex) k.right=true; else k.left=true; } else k.up=true; }
       else if(h.state==='roof'){ k.down=true; }
       else if(h.state==='climb'){
-        if(h.bld!==b.i){ k.down=true; }
+        if(h.bld!==b.i||h.side!==side){ k.down=true; }
         else {
           const ty=found.r===0?E.GROUND-4:E.GROUND-found.r*E.FLOOR+6; /* 가운데 주먹이 r층에 닿는 높이 */
           if(Math.abs(h.y-ty)>1.5){ if(h.y>ty) k.up=true; else k.down=true; }
-          else if(h.punchT<=0&&h.eatT<=0){ if(h.dir!==-h.side) k.right=true; /* 제 건물 쪽을 본다 */ if(found.r===0) k.down=true; k.punchPressed=true; punches++; }
+          else if(h.punchT<=0&&h.eatT<=0){ if(h.dir!==-h.side){ if(h.side<0) k.right=true; else k.left=true; } /* 제 건물 쪽을 본다 */ if(found.r===0) k.down=true; k.punchPressed=true; punches++; }
         }
       }
     }

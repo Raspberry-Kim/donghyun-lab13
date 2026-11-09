@@ -28,11 +28,12 @@ $('#enemy-table').innerHTML='<thead><tr><th>적</th><th>먹기</th><th>체력 �
  ['soldier','길에서 주먹','총알 1','몬스터를 따라다니며 총을 쏜다. 길에서 한 대 치면 잡아먹는다. 무너지는 건물 아래 있으면 깔린다'],
  ['cop','길에서 주먹 두 번','없음','길을 지나간다. 두 번 치면 멈추고 잡아먹는다(슈슈·둠가이는 한 번)'],
  ['taxi','길에서 주먹','없음','길을 지나간다. 한 번 치면 잡아먹는다'],
- ['tram','길에서 주먹 세 번','없음','두 량짜리 노면전차가 선로를 따라 천천히 지나간다. 세 번 치면 멈추고 승객을 잡아먹는다(슈슈·둠가이는 두 번). 드물게 온다'],
+ ['tram','길에서 주먹 세 번','없음','두 량짜리 노면전차가 선로를 따라 천천히 지나간다. 세 번 치면 멈추고 트램을 통째로 잡아먹는다(슈슈·둠가이는 두 번). 드물게 온다'],
  ['tank','못 먹는다 · 세 번 쳐서 부순다','포탄 3','느리게 다가와 포탄을 쏜다. 빗나간 포탄은 창을 깬다. 슈슈·둠가이는 두 번에 부순다'],
  ['heli','못 먹는다 · 건물에 매달려 손이 닿으면 떨어뜨린다','로켓 2','건물 높이로 날아와 로켓을 쏜다. 라이언은 더 멀리서도 친다']
 ].map(([k,eat,atk,note])=>{ const d=EN[k]; return `<tr><td>${d.name}</td><td>${eat}</td><td>${d.stam?'+'+d.stam:'—'}</td><td>${atk}</td><td>${d.score}</td><td>${note}</td></tr>`; }).join('')+'</tbody>';
-$('#city-table').innerHTML='<thead><tr><th>도시</th><th>건물</th><th>층</th><th>군인</th><th>헬기</th><th>전차</th></tr></thead><tbody>'+CITIES.map((c,i)=>`<tr><td>${i+1} ${c.name}</td><td>${c.nB}</td><td>${c.hMin}~${c.hMax}</td><td>${c.soldier}</td><td>${c.heli||'—'}</td><td>${c.tank||'—'}</td></tr>`).join('')+'</tbody>';
+const ROOF_KO={tank:'물탱크',sign:'옥상 간판',spire:'첨탑',pediment:'박공',hanok:'기와',cross:'십자',dome:'둥근 지붕',wave:'물결',glass:'유리',gable:'박공 지붕',hanok2:'기와·용마루'};
+$('#city-table').innerHTML='<thead><tr><th>도시</th><th>건물(칸)</th><th>층</th><th>지붕</th><th>군인</th><th>헬기</th><th>전차</th></tr></thead><tbody>'+CITIES.map((c,i)=>`<tr><td>${i+1} ${c.name}</td><td>${c.plan.join('·')}</td><td>${c.hMin}~${c.hMax}</td><td>${ROOF_KO[c.roof]||c.roof}</td><td>${c.soldier}</td><td>${c.heli||'—'}</td><td>${c.tank||'—'}</td></tr>`).join('')+'</tbody>';
 
 /* ---------- 동현랭 편집기(동현랭 시리즈와 같은 모양) ---------- */
 for(const ex of examples){const o=document.createElement('option');o.value=ex.id;o.textContent=ex.title;$('#example').append(o);}
@@ -128,7 +129,7 @@ function frame(now){
   } else { last=now; acc=0; }
   if(S&&S.status!=='play'&&$('#result-card').hidden){ if(mode==='over') resultCard(S.status==='win'); else if(mode==='clear') clearCard(); }
   const s=S||previewS;
-  if(s){ R.render(g,s,S?S.time:T); if(!S) previewOverlay(); if(S&&target&&!target.done) drawTarget(); if(S&&paused&&menu) drawPauseDim(); }
+  if(s){ R.render(g,s,S?S.time:T); if(!S) previewOverlay(); if(S&&target&&!target.done) drawTarget(); if(S&&mode==='over'&&S.status==='win'&&(confettiT>0||confetti.length)) confettiFrame(); if(S&&paused&&menu) drawPauseDim(); }
   requestAnimationFrame(frame);
 document.addEventListener('visibilitychange',()=>{ if(document.hidden&&S&&mode==='play'&&!menu) mainMenu(); /* 다른 탭을 보는 동안 멈추고, 돌아오면 멈춤 메뉴가 떠 있다 */ });
 }
@@ -144,7 +145,7 @@ function previewOverlay(){ const f=formOf(cfg), c=CITIES[cfg.city-1];
 /* ---------- 사건 → 소리·기록 ---------- */
 const SNDMAP={jump:'jump',land:'thud',grab:'paw',letgo:'swish',punch:'swish',hit:'thud',whiff:'swish',hurt:'hurt',shrink:'die',respawn:'pop',over:'lose',win:'win',clear:'cheer',warn:'rumble',collapse:'explode',gone:'fall',tram:'tramBell',clank:'clank',flap:'flap'};
 const KILLSND={heli:'boomHeli',tank:'boomTank',cop:'boomCar',taxi:'boomTaxi',tram:'boomTram',soldier:'pop'};
-const eatName={person:'사람',soldier:'군인',cop:'경찰차',taxi:'택시',tram:'트램 승객'};
+const eatName={person:'사람',soldier:'군인',cop:'경찰차',taxi:'택시',tram:'트램'};
 const eul=w=>{ const c=w.charCodeAt(w.length-1); return (c>=0xac00&&c<=0xd7a3&&(c-0xac00)%28)?w+'을':w+'를'; };
 const eatVerb={gulp:'꿀꺽 삼켰다',chew:'우적우적 씹어 먹었다',toss:'공중에 던져 받아먹었다',smoke:'꿀꺽 삼키고 담배를 한 모금 물었다'};
 function events(){
@@ -207,8 +208,14 @@ function backToSetup(){
   $('#setup-panel').hidden=false; $('#hud').hidden=true; $('#board-wrap').classList.remove('live'); $('#touchpad').classList.remove('on'); exitFull(); $('#full').disabled=true;
   preview(cfg); status('출전 준비'); result('다시 나서려면 코드를 고치거나 그대로 출전을 누르자.'); $('#hint').innerHTML=HINT0; renderSlotList();
 }
+/* 끝판 축하 꽃가루: 열두 번째 도시를 부수면 위에서 색종이가 쏟아진다. 처음 3초는 계속 뿌리고, 그 뒤 떨어지는 것만 남는다 */
+let confetti=[], confettiT=0; const CONF_COLORS=['#f2b705','#e5483a','#5fb44a','#4aa3ff','#ff8fd0','#fff6c9','#b57bee'];
+function startConfetti(){ confetti=[]; confettiT=180; }
+function confettiFrame(){ if(confettiT>0){ confettiT--; for(let i=0;i<3;i++) confetti.push({x:Math.random()*E.W,y:-4-Math.random()*20,vx:(Math.random()-0.5)*0.8,vy:0.6+Math.random()*0.9,w:2+Math.floor(Math.random()*2),h:3+Math.floor(Math.random()*3),c:CONF_COLORS[Math.floor(Math.random()*CONF_COLORS.length)],ph:Math.random()*6.28,sp:0.08+Math.random()*0.12}); }
+  for(const c of confetti){ c.ph+=c.sp; c.x+=c.vx+Math.sin(c.ph)*0.5; c.y+=c.vy; } confetti=confetti.filter(c=>c.y<E.H+6);
+  g.save(); g.beginPath(); g.rect(0,14,E.W,E.H-14); g.clip(); /* HUD 띠는 가리지 않는다 */ for(const c of confetti){ const sq=Math.abs(Math.cos(c.ph)); g.fillStyle=c.c; g.fillRect(Math.round(c.x),Math.round(c.y),c.w,Math.max(1,Math.round(c.h*sq))); } g.restore(); }
 function finish(win){
-  mode='over'; status(win?'열두 도시 완료':'모든 목숨을 잃음',win?'':'error'); resetKeys(); target=null;
+  mode='over'; status(win?'열두 도시 완료':'모든 목숨을 잃음',win?'':'error'); resetKeys(); target=null; if(win) startConfetti(); else { confetti=[]; confettiT=0; }
   log(win?`${CITIES[CITIES.length-1].name}까지 열두 도시를 모두 부쉈다. 점수 ${S.score.toLocaleString('ko-KR')}.`:'모든 목숨을 잃었다.'); $('#hint').innerHTML='<span><kbd>X</kbd><kbd>↵</kbd>출전 준비로</span>';
 }
 function resultCard(win){
@@ -347,7 +354,7 @@ $('#result-card').addEventListener('pointerdown',e=>{ if(e.target.tagName==='BUT
 window.render_game_to_text=()=>JSON.stringify(S?{mode,paused,city:S.city,status:S.status,lives:S.lives===Infinity?'inf':S.lives,score:S.score,form:E.form(S).key,
   hero:{x:Math.round(S.hero.x),y:Math.round(S.hero.y),stam:Math.round(S.hero.stam),state:S.hero.state,eatT:S.hero.eatT,eatKind:S.hero.eatKind},builds:S.builds.map(b=>b.state[0]+b.holes),
   enemies:S.ens.filter(e=>e.alive).map(e=>({t:e.type,x:Math.round(e.x),y:Math.round(e.y),hp:e.hp})),target}:{mode:'setup',cfg});
-window.__donghyunram={get state(){return S;},snd:SND,snapshot,restore,readSlot,saveToSlot,keyDown,keyUp,keys,get mode(){return mode;},get target(){return target;},start:()=>startGame(cfg),nextCity,parseSortie,
+window.__donghyunram={get state(){return S;},get confetti(){return {n:confetti.length,t:confettiT};},snd:SND,snapshot,restore,readSlot,saveToSlot,keyDown,keyUp,keys,get mode(){return mode;},get target(){return target;},start:()=>startGame(cfg),nextCity,parseSortie,
   step:(n=1)=>{for(let i=0;i<n;i++){if(S.status!=='play')break;tick();}}};
 selectExample(); sortieCard(cfg); preview(cfg); renderSlotList();
 /* ---------- 전체 화면(동현둠·동현크와 같은 규칙) ---------- */

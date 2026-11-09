@@ -4,7 +4,7 @@
 const {chromium}=require('/home/user/node_modules/playwright'); const path=require('path'); const assert=require('assert');
 const url='file://'+path.join(__dirname,'..','index.html');
 const SOUNDS=['jump','thud','paw','swish','hurt','die','pop','lose','win','cheer','rumble','explode','fall','tramBell','clank','flap','boomHeli','boomTank','boomCar','boomTaxi','boomTram','bone','stomp','gun','cannon','rocket','zone'];
-const GAP=2.0;
+const GAP=4.0; /* v0.20: 끝판 팡파르(win)가 3.3초라 칸을 4초로 넓혔다 */
 (async()=>{
   const b=await chromium.launch({args:['--autoplay-policy=no-user-gesture-required']}); const errs=[];
   // 1) 진짜 장치

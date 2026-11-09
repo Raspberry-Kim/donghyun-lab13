@@ -236,19 +236,20 @@ function poseOf(h,t,f){
 function eatPose(P,h,t,A){
   P.view='side'; const kind=h.eatKind||'gulp'; const tot=kind==='smoke'?70:kind==='toss'?54:kind==='chew'?48:36; const k=1-h.eatT/tot; const my=P.my;
   P.leg=[[3,0],[-3,0]]; P.arm=[A(5,12),A(-2,12)]; P.mouthBoost=1.7; P.sx=1; P.sy=1; /* 먹을 때는 입이 크고 몸이 늘었다 줄었다 한다(과장) */
-  const hold=(dx,dy)=>{ P.arm[0]=A(dx,dy); P.item={kind:'person',x:P.arm[0][0],y:P.arm[0][1]-2,fl:1,wave:1}; };
+  const what=h.eatWhat||'person'; const veh=what==='taxi'||what==='cop'||what==='tram'; const ik=veh?'veh':'person'; /* 먹은 것이 차·트램이면 그 기물을 통째로 들고 먹는다 */
+  const hold=(dx,dy)=>{ P.arm[0]=A(dx,dy); P.item={kind:ik,vt:what,city:h.eatCity||0,x:P.arm[0][0],y:P.arm[0][1]-2,fl:1,wave:1}; };
   const squash=(a)=>{ const q=Math.sin(a*Math.PI); P.sy=1-q*0.18; P.sx=1+q*0.16; }; const stretch=(a)=>{ const q=Math.sin(a*Math.PI); P.sy=1+q*0.14; P.sx=1-q*0.08; };
   if(kind==='gulp'){ /* 사람을 머리 위로 번쩍 들었다가 벌린 입에 떨어뜨리고 목이 불룩하게 삼킨다 */
     if(k<0.35){ const a=k/0.35; hold(Math.round(10-a*4),Math.round(10-a*38)); P.mouth=0.3+a*0.7; P.head=-1; P.eyes='wide'; stretch(a); P.lean=-Math.round(a*3); }
-    else if(k<0.6){ const a=(k-0.35)/0.25; P.arm=[A(12,-20),A(-12,-20)]; P.mouth=1; P.item={kind:'person',x:9,y:Math.round(my-14+a*18),fl:1,spin:Math.floor(a*4)}; P.eyes='wide'; P.head=-2; P.sy=1.14; P.sx=0.94; }
+    else if(k<0.6){ const a=(k-0.35)/0.25; P.arm=[A(12,-20),A(-12,-20)]; P.mouth=1; P.item={kind:ik,vt:what,city:h.eatCity||0,x:9,y:Math.round(my-14+a*18),fl:1,spin:Math.floor(a*4)}; P.eyes='wide'; P.head=-2; P.sy=1.14; P.sx=0.94; }
     else { const a=(k-0.6)/0.4; P.mouth=0; P.eyes=a<0.6?'closed':'happy'; P.extra.push({k:'gulp',a}); squash(Math.min(1,a*1.4)); P.arm=[A(7,10),A(-7,10)]; if(a>0.6){ P.extra.push({k:'heart'}); P.extra.push({k:'stars',a:(a-0.6)/0.4}); } }
   } else if(kind==='chew'){ /* 입에 물고 우적우적 세 번 씹는다. 부스러기가 튄다 */
     if(k<0.2){ const a=k/0.2; hold(Math.round(10-a*2),Math.round(10-a*24)); P.mouth=0.6+a*0.4; P.eyes='wide'; stretch(a*0.8); }
-    else if(k<0.85){ const a=(k-0.2)/0.65; const ch=Math.sin(a*Math.PI*4); const q=Math.max(0,ch); P.mouth=q; P.head=ch>0?2:-1; P.lean=ch>0?2:-2; P.eyes=ch>0.5?'closed':'wide'; P.extra.push({k:'crumb',a}); P.arm=[A(9,6-Math.round(q*4)),A(-9,8-Math.round(q*4))]; P.sy=1-q*0.14; P.sx=1+q*0.14; if(a<0.5) P.item={kind:'legs',x:11,y:my-1,fl:1,kick:1}; }
+    else if(k<0.85){ const a=(k-0.2)/0.65; const ch=Math.sin(a*Math.PI*4); const q=Math.max(0,ch); P.mouth=q; P.head=ch>0?2:-1; P.lean=ch>0?2:-2; P.eyes=ch>0.5?'closed':'wide'; P.extra.push({k:'crumb',a}); P.arm=[A(9,6-Math.round(q*4)),A(-9,8-Math.round(q*4))]; P.sy=1-q*0.14; P.sx=1+q*0.14; if(a<0.5) P.item=veh?{kind:'vehHalf',vt:what,city:h.eatCity||0,x:11,y:my+2}:{kind:'legs',x:11,y:my-1,fl:1,kick:1}; }
     else { const a=(k-0.85)/0.15; P.eyes='happy'; P.extra.push({k:'heart'}); P.extra.push({k:'stars',a}); P.body=-1; }
   } else if(kind==='toss'){ /* 하늘로 휙 던져 올리고 입을 쩍 벌려 받아먹는다 */
     if(k<0.25){ const a=k/0.25; hold(Math.round(8+a*2),Math.round(12-a*40)); P.mouth=0.2+a*0.3; if(a<0.5) squash(a*2); else stretch((a-0.5)*2); P.lean=Math.round((0.5-a)*4); }
-    else if(k<0.7){ const a=(k-0.25)/0.45; const top=my-44; const fy=a<0.5?(my-28)-(Math.sin(a*Math.PI))*18:(top+10)+(a-0.5)*2*((my-6)-(top+10)); P.item={kind:'person',x:Math.round(11-a*3),y:Math.round(fy),fl:1,spin:Math.floor(a*12),wave:1}; P.mouth=0.3+a*0.7; P.head=-3; P.eyes='wide'; P.arm=[A(12,-14),A(-12,-14)]; P.sy=1.1; P.sx=0.95; P.lean=-2; }
+    else if(k<0.7){ const a=(k-0.25)/0.45; const top=my-44; const fy=a<0.5?(my-28)-(Math.sin(a*Math.PI))*18:(top+10)+(a-0.5)*2*((my-6)-(top+10)); P.item={kind:ik,vt:what,city:h.eatCity||0,x:Math.round(11-a*3),y:Math.round(fy),fl:1,spin:Math.floor(a*12),wave:1}; P.mouth=0.3+a*0.7; P.head=-3; P.eyes='wide'; P.arm=[A(12,-14),A(-12,-14)]; P.sy=1.1; P.sx=0.95; P.lean=-2; }
     else { const a=(k-0.7)/0.3; P.mouth=a<0.2?1:0; P.eyes=a<0.5?'closed':'happy'; P.extra.push({k:'snap',a}); squash(Math.min(1,a*1.3)); if(a>0.5){ P.extra.push({k:'heart'}); P.extra.push({k:'stars',a:(a-0.5)*2}); } P.arm=[A(7,10),A(-7,10)]; }
   } else { /* smoke: 급히 꿀꺽 삼키고, 담배를 물고 한 모금. 연기 고리가 올라간다 */
     if(k<0.2){ const a=k/0.2; hold(Math.round(10-a*4),Math.round(10-a*36)); P.mouth=0.9+a*0.1; P.eyes='wide'; stretch(a); }
@@ -271,7 +272,10 @@ function items(g,P,t){
   }
   if(P.item){ const it=P.item; if(it.kind==='person'){ g.save(); g.translate(it.x,it.y); g.scale(2,2); if(it.spin) g.rotate(it.spin*Math.PI/6); person(g,0,0,t*2,1,3); g.restore(); }
     else if(it.kind==='legs'){ const kk=it.kick?((t>>1)&1?1:-1):0; px(g,it.x,it.y-1,2,5,C.ppants); px(g,it.x+3,it.y-1+kk,2,5,C.ppants); px(g,it.x-1,it.y-2,7,2,C.pshirt[3]); px(g,it.x,it.y+4,2,1,C.line); px(g,it.x+3,it.y+4+kk,2,1,C.line); }
-    else if(it.kind==='cig'){ px(g,it.x,it.y,6,1,C.cig); px(g,it.x+6,it.y,1,1,((t>>2)&1)?C.ember:C.glove); } }
+    else if(it.kind==='cig'){ px(g,it.x,it.y,6,1,C.cig); px(g,it.x+6,it.y,1,1,((t>>2)&1)?C.ember:C.glove); }
+    else if(it.kind==='veh'||it.kind==='vehHalf'){ /* 손 안의 택시·경찰차·트램: 실제 기물 그림을 작게(차 0.5배 · 트램 0.35배). 씹는 중에는 뒷반쪽만 입 밖에 남는다 */
+      const tramish=it.vt==='tram'; const sc=tramish?0.35:0.5; g.save(); g.translate(it.x,it.y); if(it.spin) g.rotate(it.spin*Math.PI/6);
+      if(it.kind==='vehHalf'){ g.beginPath(); g.rect(0,-20,20,24); g.clip(); } g.scale(sc,sc); const fe={x:0,y:tramish?4:6,dir:1,type:it.vt,ad:0,ad2:0,city:it.city||0}; if(tramish) tram(g,fe,t); else car(g,fe,t); g.restore(); } }
 }
 
 function shrunk(g,h,t){ const k=h.shrinkT; const sc=k>90?1-(120-k)/30*0.6:0.4; if(k>90){ g.save(); g.scale(sc,sc); g.globalAlpha=0.6; g.restore(); }
@@ -320,12 +324,20 @@ function heli(g,e,t){ g.save(); g.translate(Math.round(e.x),Math.round(e.y)); if
   px(g,-22,-5,14,1,L); px(g,-22,-1,14,1,L); px(g,-21,-4,13,3,C.heli); px(g,-21,-3,13,1,C.heli2); px(g,-23,-11,3,8,C.heli2); px(g,-22,-10,1,6,C.heli3); px(g,-24,-7+((t>>1)&1)*2,6,1,C.rotor); /* 꼬리 붐·수직 날개·꼬리 날개 */
   px(g,-7,3,14,1,C.heli2); px(g,-5,2,1,1,C.heli2); px(g,4,2,1,1,C.heli2); px(g,-7,4,14,1,'rgba(0,0,0,.3)'); /* 착륙 활대 */ g.restore(); }
 /* 트램: 두 량짜리 노면전차. 앞 량은 진행 방향(dir) 쪽, 뒤 량은 연결기 뒤. 각 량 26px, 사이 2px */
-function tram(g,e,t){ g.save(); g.translate(Math.round(e.x),Math.round(e.y)); if(e.dir<0) g.scale(-1,1); const L=C.line; const body='#2e8b57', body2='#216b43', hi='#8fd9a8', cream='#f1e9c9';
+const TRAM_DEFAULT=['#2e8b57','#216b43','#8fd9a8'];
+function tramLivery(e){ const EG=root.Engine; const c=(EG&&e.city)?EG.CITIES[(e.city-1)%EG.CITIES.length]:null; return (c&&c.tram)||TRAM_DEFAULT; } /* 도시마다 도색이 다르다(엔진 CITIES.tram). 엔진이 없으면 기본 초록 */
+/* 광고판 10×5: 0 빨간 콜라(흰 물결) · 1 파랑·빨강 둥근 콜라 · 2 포동이 얼굴. 실제 상표 로고는 그리지 않고 느낌만 낸다 */
+function adPanel(g,x,y,kind){ px(g,x-1,y-1,12,7,'#1a1620');
+  if(kind===0){ px(g,x,y,10,5,'#d8322a'); px(g,x+1,y+1,2,1,'#fff'); px(g,x+3,y+2,2,1,'#fff'); px(g,x+5,y+1,2,1,'#fff'); px(g,x+7,y+2,2,1,'#fff'); px(g,x+1,y+4,8,1,'#f6b9b3'); }
+  else if(kind===1){ px(g,x,y,10,5,'#f4f1ea'); px(g,x+3,y,4,2,'#1d4fa0'); px(g,x+2,y+1,6,1,'#1d4fa0'); px(g,x+3,y+3,4,2,'#d8322a'); px(g,x+2,y+3,6,1,'#d8322a'); px(g,x+2,y+2,6,1,'#fff'); px(g,x,y,1,5,'#1d4fa0'); px(g,x+9,y,1,5,'#d8322a'); }
+  else { px(g,x,y,10,5,'#f7d7e0'); px(g,x+3,y,5,5,'#fff'); px(g,x+2,y+1,1,3,'#fff'); px(g,x+8,y+1,1,3,'#fff'); px(g,x+4,y+1,1,1,'#1a1620'); px(g,x+6,y+1,1,1,'#1a1620'); px(g,x+5,y+3,1,1,'#1a1620'); px(g,x+4,y+4,3,1,'#e2576a'); } }
+function tram(g,e,t){ g.save(); g.translate(Math.round(e.x),Math.round(e.y)); if(e.dir<0) g.scale(-1,1); const L=C.line; const [body,body2,hi]=tramLivery(e); const cream='#f1e9c9';
   for(const car of [0,1]){ const ox=car===0?2:-26; /* 앞 량 x: 2..28 · 뒤 량 x: -26..0 */
     px(g,ox-1,-14,28,1,L); px(g,ox-1,-1,28,1,L); px(g,ox-1,-13,1,12,L); px(g,ox+26,-13,1,12,L); /* 윤곽 */
     px(g,ox,-13,26,12,body); px(g,ox,-13,26,1,hi); px(g,ox,-6,26,1,cream); px(g,ox,-5,26,4,body2);
     for(let i=0;i<4;i++){ px(g,ox+2+i*6,-11,4,4,C.glass); px(g,ox+2+i*6,-11,2,1,'#e4f4fb'); px(g,ox+1+i*6,-11,1,4,body2); } /* 창 넷 */
     if(car===0){ px(g,ox+24,-11,1,4,'#fff2b0'); px(g,ox+21,-8,2,3,body2); } else { px(g,ox,-11,1,4,'#ff5a5a'); } /* 전조등·후미등 */
+    { const ad=car===0?(e.ad|0):(e.ad2==null?(e.ad|0):e.ad2|0); g.save(); if(e.dir<0){ g.translate(ox*2+26,0); g.scale(-1,1); } adPanel(g,ox+8,-6,ad%3); g.restore(); } /* 옆구리 광고판(뒤집혀도 바로 보이게) */
     px(g,ox+4,-2,5,3,C.wheel); px(g,ox+17,-2,5,3,C.wheel); px(g,ox+5,-1,3,1,'#8a8d92'); px(g,ox+18,-1,3,1,'#8a8d92'); }
   px(g,0,-8,2,3,L); /* 연결기 */
   /* 팬터그래프: 앞 량 지붕 위의 집전 장치. 흔들림을 t로 */ const pw=(t>>3)&1; px(g,9,-17,8,1,L); px(g,11,-16,1,2,L); px(g,14,-16+pw,1,2,L); px(g,8,-18,10,1,'#5a5a5a');
@@ -346,5 +358,5 @@ function fx(g,x){ const a=x.t;
   else if(x.k==='chunk'){ /* 벽돌 조각 */ const col=(x.wall||C.dust2); const sz=x.sz||2; px(g,x.x,x.y-sz,sz,sz,col); if(sz>2) px(g,x.x,x.y-sz,1,1,'#fff6'); }
   else if(x.k==='glass'){ /* 유리 조각 */ px(g,x.x,x.y-1,1,1,(a>>1)&1?'#d8f1fa':'#7eb6cc'); } }
 
-root.Sprites={C,px,blob,limb,person,drawMonster,drawIdle,poseOf,soldier,car,tank,heli,tram,shot,fx,star,BURSTS};
+root.Sprites={C,px,blob,limb,person,drawMonster,drawIdle,poseOf,soldier,car,tank,heli,tram,adPanel,tramLivery,shot,fx,star,BURSTS};
 })(typeof window!=='undefined'?window:module.exports);

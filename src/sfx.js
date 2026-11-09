@@ -67,7 +67,8 @@ var DHSFX=function(storeKey){ /* 동현워의 합성 효과음에 동현크용 �
         o.connect(lp); lp.connect(g); g.connect(b); o.start(u2); o.stop(u2+0.9); lfo.start(u2); lfo.stop(u2+0.9); } },
     alert:function(t){ tone(t,'triangle',330,0.18,0.35); tone(t+0.2,'triangle',247,0.3,0.35); },
     bell:function(t,f,dur,peak){ tone(t,'sine',f,dur,peak,0.005); tone(t,'sine',f*2,dur*0.5,peak*0.3,0.005); tone(t,'sine',f*3.01,dur*0.25,peak*0.12,0.005); },
-    win:function(t){ S.bell(t,523.25,0.5,0.5); S.bell(t+0.28,659.25,0.5,0.5); S.bell(t+0.56,783.99,1.2,0.55); },
+    win:function(t){ /* 끝판 팡파르: 종 네 번 오르고(도·미·솔·높은도) 삼화음이 길게 울리는 위로 환호가 겹친다 */ S.bell(t,523.25,0.5,0.5); S.bell(t+0.28,659.25,0.5,0.5); S.bell(t+0.56,783.99,0.6,0.55); S.bell(t+0.84,1046.5,1.8,0.6);
+      tone(t+0.84,'triangle',261.63,2.0,0.16,0.02); tone(t+0.84,'triangle',329.63,2.0,0.14,0.02); tone(t+0.84,'triangle',392,2.0,0.14,0.02); S.bell(t+1.4,1318.5,1.2,0.3); S.bell(t+1.7,1568,1.6,0.3); S.cheer(t+0.9); },
     lose:function(t){ S.bell(t,196,1.3,0.55); tone(t,'sine',196*2.76,0.5,0.08,0.005); },
     /* 공격·반격·격파 */
     gun:function(t){ for(var i=0;i<2;i++){ noise(t+i*0.11,0.07,'bandpass',1800,0.8,0.8,0.002); var o=tone(t+i*0.11,'square',220,0.04,0.12,0.002); o.frequency.exponentialRampToValueAtTime(70,t+i*0.11+0.04); } },
