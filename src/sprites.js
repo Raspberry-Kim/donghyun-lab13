@@ -47,11 +47,11 @@ podong:{rows:`
 .KWWWWWWWWWWWWK.
 KWWWEKWWWWEKWWWK
 KWWWKKWWWWKKWWWK
-KWWWWWWKKWWWWWWK
-KWWWWWWKKWWWWWWK
-KWWWWWWWWWWWWWWK
-.KWWRRRRRRRRWWK.
-..KKKKKKKKKKKK..`,eyes:[[4,4,2,2],[10,4,2,2]],mouth:[8,9,6],skin:'W'},
+KWWKWWWKKWWWKWWK
+KWWKWWWKKWWWKWWK
+KWWKKWWWWWWKKWWK
+KWWKRRRRRRRRKWWK
+.KKKWWWWWWWWKKK.`,eyes:[[4,4,2,2],[10,4,2,2]],mouth:[8,9,6],skin:'W'},
 shushu:{rows:`
 KhhK........KhhK
 hhhhK..KK..Khhhh
@@ -146,13 +146,13 @@ function body(g,P,t,key,S){
   if(S.tail){ /* 라이언: 다리 대신 꼬리 토막 셋 */ blob(g,-6,-4+up,4,3,S.leg,L); blob(g,-11,-3+up,3,2,S.leg2,L); blob(g,-15,-2,2,2,S.leg,L); }
   else { limb(g,-4,-8+up,legs[1][0],legs[1][1]-3,5,S.leg2,L); foot(legs[1][0],legs[1][1]); limb(g,4,-8+up,legs[0][0],legs[0][1]-3,5,S.leg,L); foot(legs[0][0],legs[0][1]); }
   /* 몸통 */ px(g,-8,-17+up,16,12,L); px(g,-7,-16+up,14,10,S.body); if(S.belly) px(g,-4,-14+up,8,7,S.belly); if(S.stripe) for(let y=-15;y<-7;y+=3) px(g,-7,y+up,14,1,S.stripe);
-  if(S.collar){ px(g,-7,-16+up,14,2,S.collar); px(g,0,-14+up,2,2,'#f2b705'); } if(S.emblem){ px(g,-2,-13+up,4,4,S.emblem); px(g,-1,-12+up,2,2,'#ffd36a'); } if(S.belt){ px(g,-7,-8+up,14,2,S.belt); }
+  if(S.collar){ px(g,-7,-16+up,14,2,S.collar); px(g,0,-14+up,2,2,'#f2b705'); } if(S.tag){ px(g,0,-16+up,2,2,'#f2b705'); } if(S.emblem){ px(g,-2,-13+up,4,4,S.emblem); px(g,-1,-12+up,2,2,'#ffd36a'); } if(S.belt){ px(g,-7,-8+up,14,2,S.belt); }
   /* 머리 */ drawFace(g,P,key,hx,hy);
   /* 앞쪽 팔 */ limb(g,7,-13+up,arms[0][0],arms[0][1]+up,4,S.arm,L); hand(arms[0][0],arms[0][1]+up);
   items(g,P,t);
 }
 const STYLE={
-  podong:{body:C.fur,belly:'#fdf7ea',arm:C.fur,hand:C.fur,leg:C.fur,leg2:C.fur2,foot:C.fur2,collar:C.collar},
+  podong:{body:C.fur,belly:'#fdf7ea',arm:C.fur,hand:C.fur,leg:C.fur,leg2:C.fur2,foot:C.fur2,tag:1},
   shushu:{body:C.glove,belly:C.glove2,arm:C.skin,glove:C.glove,glove2:C.glove2,leg:C.skin,leg2:C.skin2,foot:C.hair2,belt:C.short},
   lion:{body:C.worm,stripe:C.worm2,arm:C.worm,hand:C.worm2,leg:C.worm,leg2:C.worm2,foot:C.worm2,tail:1},
   copter:{body:C.cop,belly:'#b5dcf2',arm:C.cop,hand:C.cop3,leg:C.cop,leg2:C.cop2,foot:C.cop2},

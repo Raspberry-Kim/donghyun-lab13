@@ -81,7 +81,7 @@ function parseSortie(out){
 const formOf=c=>FORMS[c.form-1];
 function sortieCard(c){
   const f=formOf(c);
-  $('#sortie-card').innerHTML=[['괴물',`${f.name} · ${f.from}`],['시작 도시',`${c.city} · ${CITIES[c.city-1].name} → ${CITIES.length} 제주까지`],['목숨',c.lives===0?'무한':String(c.lives)],['조작','←→↑↓ 이동·오르기 · X 점프 · Z 주먹 · 화면을 직접 찍어도 된다']].map(([a,b])=>`<div><span>${a}</span><strong>${b}</strong></div>`).join('');
+  $('#sortie-card').innerHTML=[['괴물',`${f.name} · ${f.from}`],['시작 도시',`${c.city} · ${CITIES[c.city-1].name} → ${CITIES.length} 마라도까지`],['목숨',c.lives===0?'무한':String(c.lives)],['조작','←→↑↓ 이동·오르기 · X 점프 · Z 주먹 · 화면을 직접 찍어도 된다']].map(([a,b])=>`<div><span>${a}</span><strong>${b}</strong></div>`).join('');
   $('#stamp-forms').innerHTML=`${f.name} <span>괴물</span>`;
 }
 function result(text,kind){ const r=$('#result'); r.textContent=text; r.dataset.kind=kind||''; }
@@ -204,7 +204,7 @@ function backToSetup(){
 }
 function finish(win){
   mode='over'; status(win?'열두 도시 완료':'모든 목숨을 잃음',win?'':'error'); resetKeys(); target=null;
-  log(win?`제주까지 열두 도시를 모두 부쉈다. 점수 ${S.score.toLocaleString('ko-KR')}.`:'모든 목숨을 잃었다.'); $('#hint').innerHTML='<span><kbd>X</kbd><kbd>↵</kbd>출전 준비로</span>';
+  log(win?`마라도까지 열두 도시를 모두 부쉈다. 점수 ${S.score.toLocaleString('ko-KR')}.`:'모든 목숨을 잃었다.'); $('#hint').innerHTML='<span><kbd>X</kbd><kbd>↵</kbd>출전 준비로</span>';
 }
 function resultCard(win){
   $('#result-card').innerHTML=`<div><h3 class="${win?'win':'lose'}">${win?'열두 도시를 모두 부쉈다':'다시 해 보자'}</h3><div class="rc-grid"><div><span>점수</span><strong>${S.score.toLocaleString('ko-KR')}</strong></div><div><span>부순 도시</span><strong>${S.citiesDone}</strong></div><div><span>먹은 것</span><strong>${S.hero.eats||0}</strong></div><div><span>시간</span><strong>${Math.floor(S.time/60)}초</strong></div></div><p>X 또는 Enter로 출전 준비로 돌아간다.</p><button type="button" id="rc-back">출전 준비로</button></div>`;
