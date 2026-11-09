@@ -208,18 +208,18 @@ function backToSetup(){
   $('#setup-panel').hidden=false; $('#hud').hidden=true; $('#board-wrap').classList.remove('live'); $('#touchpad').classList.remove('on'); exitFull(); $('#full').disabled=true;
   preview(cfg); status('출전 준비'); result('다시 나서려면 코드를 고치거나 그대로 출전을 누르자.'); $('#hint').innerHTML=HINT0; renderSlotList();
 }
-/* 끝판 축하 꽃가루: 열두 번째 도시를 부수면 위에서 색종이가 쏟아진다. 처음 3초는 계속 뿌리고, 그 뒤 떨어지는 것만 남는다 */
+/* 끝판 축하 꽃가루: 열두 번째 동네를 부수면 위에서 색종이가 쏟아진다. 처음 3초는 계속 뿌리고, 그 뒤 떨어지는 것만 남는다 */
 let confetti=[], confettiT=0; const CONF_COLORS=['#f2b705','#e5483a','#5fb44a','#4aa3ff','#ff8fd0','#fff6c9','#b57bee'];
 function startConfetti(){ confetti=[]; confettiT=180; }
 function confettiFrame(){ if(confettiT>0){ confettiT--; for(let i=0;i<3;i++) confetti.push({x:Math.random()*E.W,y:-4-Math.random()*20,vx:(Math.random()-0.5)*0.8,vy:0.6+Math.random()*0.9,w:2+Math.floor(Math.random()*2),h:3+Math.floor(Math.random()*3),c:CONF_COLORS[Math.floor(Math.random()*CONF_COLORS.length)],ph:Math.random()*6.28,sp:0.08+Math.random()*0.12}); }
   for(const c of confetti){ c.ph+=c.sp; c.x+=c.vx+Math.sin(c.ph)*0.5; c.y+=c.vy; } confetti=confetti.filter(c=>c.y<E.H+6);
   g.save(); g.beginPath(); g.rect(0,14,E.W,E.H-14); g.clip(); /* HUD 띠는 가리지 않는다 */ for(const c of confetti){ const sq=Math.abs(Math.cos(c.ph)); g.fillStyle=c.c; g.fillRect(Math.round(c.x),Math.round(c.y),c.w,Math.max(1,Math.round(c.h*sq))); } g.restore(); }
 function finish(win){
-  mode='over'; status(win?'열두 도시 완료':'모든 목숨을 잃음',win?'':'error'); resetKeys(); target=null; if(win) startConfetti(); else { confetti=[]; confettiT=0; }
-  log(win?`${CITIES[CITIES.length-1].name}까지 열두 도시를 모두 부쉈다. 점수 ${S.score.toLocaleString('ko-KR')}.`:'모든 목숨을 잃었다.'); $('#hint').innerHTML='<span><kbd>X</kbd><kbd>↵</kbd>출전 준비로</span>';
+  mode='over'; status(win?'열두 동네 완료':'모든 목숨을 잃음',win?'':'error'); resetKeys(); target=null; if(win) startConfetti(); else { confetti=[]; confettiT=0; }
+  log(win?`${CITIES[CITIES.length-1].name}까지 열두 동네를 모두 부쉈다. 점수 ${S.score.toLocaleString('ko-KR')}.`:'모든 목숨을 잃었다.'); $('#hint').innerHTML='<span><kbd>X</kbd><kbd>↵</kbd>출전 준비로</span>';
 }
 function resultCard(win){
-  $('#result-card').innerHTML=`<div><h3 class="${win?'win':'lose'}">${win?'열두 도시를 모두 부쉈다':'다시 해 보자'}</h3><div class="rc-grid"><div><span>점수</span><strong>${S.score.toLocaleString('ko-KR')}</strong></div><div><span>부순 도시</span><strong>${S.citiesDone}</strong></div><div><span>먹은 것</span><strong>${S.hero.eats||0}</strong></div><div><span>시간</span><strong>${Math.floor(S.time/60)}초</strong></div></div><p>X 또는 Enter로 출전 준비로 돌아간다.</p><button type="button" id="rc-back">출전 준비로</button></div>`;
+  $('#result-card').innerHTML=`<div><h3 class="${win?'win':'lose'}">${win?'열두 동네를 모두 부쉈다':'다시 해 보자'}</h3><div class="rc-grid"><div><span>점수</span><strong>${S.score.toLocaleString('ko-KR')}</strong></div><div><span>부순 도시</span><strong>${S.citiesDone}</strong></div><div><span>먹은 것</span><strong>${S.hero.eats||0}</strong></div><div><span>시간</span><strong>${Math.floor(S.time/60)}초</strong></div></div><p>X 또는 Enter로 출전 준비로 돌아간다.</p><button type="button" id="rc-back">출전 준비로</button></div>`;
   $('#result-card').hidden=false; $('#rc-back').onclick=backToSetup;
 }
 $('#concede').onclick=()=>{ if(!S||mode==='over') return; confirmMenu('포기하고 출전 준비로 돌아갈까?',[['포기한다',backToSetup],['계속 간다',()=>{}]]); };
