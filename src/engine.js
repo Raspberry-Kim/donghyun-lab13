@@ -1,13 +1,13 @@
-/* 동현램 엔진: 화면 하나 크기의 거리(320×200)에 선 건물의 옆벽을 괴물이 타고 올라 부수는 고전 규칙.
-   괴물은 건물의 왼쪽·오른쪽 옆벽에 붙어 오르내리고, 주먹은 바라보는 쪽(제 건물 또는 옆 건물)의 위·가운데·아래 칸을 친다. 맨 아래에서 아래로 치면 길의 차·군인을 잡는다.
+/* 동현램 엔진: 화면 하나 크기의 거리(320×200)에 선 건물의 옆벽을 몬스터가 타고 올라 부수는 고전 규칙.
+   몬스터는 건물의 왼쪽·오른쪽 옆벽에 붙어 오르내리고, 주먹은 바라보는 쪽(제 건물 또는 옆 건물)의 위·가운데·아래 칸을 친다. 맨 아래에서 아래로 치면 길의 차·군인을 잡는다.
    그림·소리와 떨어진 순수 상태 기계라 node에서도 돈다. 난수는 상태 안의 rs 하나로만 돌려 저장·복원이 그대로 된다. */
 (function(root){
 'use strict';
-const W=320, H=200, GROUND=176, FLOOR=16, BW=40, GAP=24, SLOT=BW+GAP, COLS=2, CELL_W=BW/COLS, HAND=14, WALL_TOP=16, FX_MAX=180; /* 건물 사이 골목 24px: 괴물이 서서 어느 쪽 벽을 탈지 고를 수 있다(원작도 건물 사이에 골목이 있다). */ /* 손은 발에서 14px 위. 옆벽의 가장 높은 자리는 꼭대기에서 16px 아래(거기서 가운데 주먹이 꼭대기 층에 닿는다) */
+const W=320, H=200, GROUND=176, FLOOR=16, BW=40, GAP=24, SLOT=BW+GAP, COLS=2, CELL_W=BW/COLS, HAND=14, WALL_TOP=16, FX_MAX=180; /* 건물 사이 골목 24px: 몬스터가 서서 어느 쪽 벽을 탈지 고를 수 있다(원작도 건물 사이에 골목이 있다). */ /* 손은 발에서 14px 위. 옆벽의 가장 높은 자리는 꼭대기에서 16px 아래(거기서 가운데 주먹이 꼭대기 층에 닿는다) */
 const MAX_STAM=100, DRAIN_EVERY=240; /* 4초에 1칸: 가만히 있어도 6~7분은 버틴다. 맞아도 조금만 깎이고 먹으면 크게 차서 거의 가득 찬 채로 논다 */
 const FORMS=[
   {id:1,key:'podong',name:'포동이',from:'실험실의 강아지',color:'#f6ecd6',atk:1.0,def:1.0,reach:1,speed:1.0,hang:1.0,
-   desc:'기본 괴물. 힘·맷집·손 길이·걸음·점프가 모두 기준값이다. 처음이라면 포동이로 시작하자.'},
+   desc:'기본 몬스터. 힘·맷집·손 길이·걸음·점프가 모두 기준값이다. 처음이라면 포동이로 시작하자.'},
   {id:2,key:'shushu',name:'슈슈',from:'동현파의 복서',color:'#cf6157',atk:1.5,def:0.7,reach:1,speed:1.0,hang:1.0,
    desc:'빨간 글러브의 한 방이 세다(힘 150%, 창 하나를 한 방에 뚫는다). 대신 맷집이 약해 총알·포탄에 체력이 더 많이 깎인다(맷집 70%).'},
   {id:3,key:'lion',name:'라이언',from:'동현파의 분홍 선충',color:'#f0a3a3',atk:0.7,def:0.8,reach:2,speed:1.0,hang:1.0,
@@ -106,7 +106,7 @@ function eat(S,score,stam,what){ const h=S.hero; h.stam=Math.min(MAX_STAM,h.stam
 function collapse(S,b){ if(b.state!=='up') return; b.state='falling'; b.fall=0; S.score+=SCORE.building; S.events.push({t:'collapse',i:b.i});
   for(let i=0;i<4;i++) addFx(S,'cloud',b.x+ri(S,0,b.w),GROUND-6-ri(S,0,10),b.i); debris(S,b.x+b.w/2,topY(b)+10,b.i,8,'chunk');
   for(const e of S.ens) if(e.type==='soldier'&&e.x>b.x-4&&e.x<b.x+b.w+4){ e.alive=false; S.score+=50; }
-  /* 붙어 있던 괴물은 건물과 함께 내려간다(ride). 내려가는 동안 X로 뛰어내리지 않으면 바닥에 주저앉는다(sit) */
+  /* 붙어 있던 몬스터는 건물과 함께 내려간다(ride). 내려가는 동안 X로 뛰어내리지 않으면 바닥에 주저앉는다(sit) */
   const h=S.hero; if(h.bld===b.i&&(h.state==='climb'||h.state==='roof')){ h.state='ride'; h.rideY=h.y; addFx(S,'quake',0,0,0); S.events.push({t:'ride'}); } }
 
 function hurt(S,dmg,by){ const h=S.hero; if(h.inv>0||S.status!=='play'||h.shrinkT) return; const f=form(S); const real=Math.max(1,Math.round(dmg/f.def));
@@ -275,7 +275,7 @@ function stepWorld(S){
 }
 function shoot(S,x,y,tx,ty,spd,kind,dmg){ const dx=tx-x, dy=ty-y, L=Math.hypot(dx,dy)||1; S.shots.push({x,y,vx:dx/L*spd,vy:dy/L*spd,kind,dmg,t:0}); S.events.push({t:'shot',kind}); }
 
-/* 손가락·마우스로 찍은 자리로 가는 자동 조종: 찍은 곳이 괴물 자신이면 주먹, 건물이면 가까운 옆벽으로 걸어가 오른다.
+/* 손가락·마우스로 찍은 자리로 가는 자동 조종: 찍은 곳이 몬스터 자신이면 주먹, 건물이면 가까운 옆벽으로 걸어가 오른다.
    매달린 채 옆 건물을 찍으면 그쪽을 보고 뛰어 건너고, 지붕 위를 찍으면 꼭대기를 넘어 올라선다 */
 function autoKeys(S,target,k){
   k.left=k.right=k.up=k.down=false; if(!target) return k;

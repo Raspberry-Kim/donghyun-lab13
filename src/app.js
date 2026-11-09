@@ -1,4 +1,4 @@
-/* 동현램 앱: 동현랭 편집기 → 출전 규약(괴물·시작 도시·목숨) → 키보드·게임패드·손가락(마우스) 조작. 동현전·동현워·동현크와 같은 키 배치와 저장 방식. */
+/* 동현램 앱: 동현랭 편집기 → 출전 규약(몬스터·시작 도시·목숨) → 키보드·게임패드·손가락(마우스) 조작. 동현전·동현워·동현크와 같은 키 배치와 저장 방식. */
 (function(){
 const HINT0='<span><kbd>X</kbd>주먹</span><span><kbd>Z</kbd>점프</span><span><kbd>A</kbd>설명</span><span><kbd>↵</kbd>메뉴</span>';
 const $=s=>document.querySelector(s), E=window.Engine, R=window.Render, SP=window.Sprites, {FORMS,CITIES,EN}=E;
@@ -25,7 +25,7 @@ $('.brand').onclick=e=>{e.preventDefault();document.querySelector('[data-tab=pla
 const pct=v=>Math.round(v*100)+'%';
 $('#form-grid').innerHTML=FORMS.map(f=>`<article><h4>${f.id} · ${f.name}<small>${f.from}</small></h4><p>${f.desc}</p><p class="stat">힘 ${pct(f.atk)} · 맷집 ${pct(f.def)} · 걸음 ${pct(f.speed)}${f.reach>1?' · 손 길이 2배':''}${f.hang>1?' · 낙하 1/3':''}</p></article>`).join('');
 $('#enemy-table').innerHTML='<thead><tr><th>적</th><th>먹기</th><th>체력 회복</th><th>공격</th><th>점수</th><th>습성</th></tr></thead><tbody>'+[
- ['soldier','길에서 주먹','총알 1','괴물을 따라다니며 총을 쏜다. 길에서 한 대 치면 잡아먹는다. 무너지는 건물 아래 있으면 깔린다'],
+ ['soldier','길에서 주먹','총알 1','몬스터를 따라다니며 총을 쏜다. 길에서 한 대 치면 잡아먹는다. 무너지는 건물 아래 있으면 깔린다'],
  ['cop','길에서 주먹 두 번','없음','길을 지나간다. 두 번 치면 멈추고 잡아먹는다(슈슈·둠가이는 한 번)'],
  ['taxi','길에서 주먹','없음','길을 지나간다. 한 번 치면 잡아먹는다'],
  ['tank','못 먹는다 · 세 번 쳐서 부순다','포탄 3','느리게 다가와 포탄을 쏜다. 빗나간 포탄은 창을 깬다. 슈슈·둠가이는 두 번에 부순다'],
@@ -64,25 +64,25 @@ $('#save').onclick=()=>{const a=document.createElement('a');a.href=URL.createObj
 $('#open').onchange=async e=>{const f=e.target.files[0];if(!f)return;code.value=(await f.text()).replace(/\r/g,'').replace(/\n$/,'');codeChanged();e.target.value='';};
 $('#run').onclick=()=>sortie();
 
-/* ---------- 출전 규약: 첫 정수 괴물(필수) · 둘째 시작 도시(선택) · 셋째 목숨(선택, 0 무한) ---------- */
+/* ---------- 출전 규약: 첫 정수 몬스터(필수) · 둘째 시작 도시(선택) · 셋째 목숨(선택, 0 무한) ---------- */
 const DEFAULT={form:1,city:1,lives:3};
 let cfg={...DEFAULT};
 function parseSortie(out){
   const tok=out.split(/\s+/).filter(Boolean).map(Number), c={...DEFAULT}, err=[];
   if(tok.length===0){ return {c,go:false,err:[]}; }
   const [f,ci,li]=tok;
-  if(!(Number.isInteger(f)&&f>=1&&f<=FORMS.length)) err.push(`첫 정수 ${f}은(는) 괴물 번호가 아니다. 1 포동이 · 2 슈슈 · 3 라이언 · 4 꼬리콥터 · 5 둠가이 중 하나를 출력하자.`);
+  if(!(Number.isInteger(f)&&f>=1&&f<=FORMS.length)) err.push(`첫 정수 ${f}은(는) 몬스터 번호가 아니다. 1 포동이 · 2 슈슈 · 3 라이언 · 4 꼬리콥터 · 5 둠가이 중 하나를 출력하자.`);
   else c.form=f;
   if(!err.length&&tok.length>=2){ if(!(Number.isInteger(ci)&&ci>=1&&ci<=CITIES.length)) err.push(`둘째 정수 ${ci}은(는) 시작 도시가 아니다. 1~${CITIES.length}만 된다.`); else c.city=ci; }
   if(!err.length&&tok.length>=3){ if(!(Number.isInteger(li)&&li>=0&&li<=9)) err.push(`셋째 정수 ${li}은(는) 목숨 수가 아니다. 1~9 또는 0(무한)만 된다.`); else c.lives=li; }
-  if(!err.length&&tok.length>3) err.push(`정수가 ${tok.length}개 나왔다. 괴물 · 시작 도시 · 목숨 세 개까지만 읽는다.`);
+  if(!err.length&&tok.length>3) err.push(`정수가 ${tok.length}개 나왔다. 몬스터 · 시작 도시 · 목숨 세 개까지만 읽는다.`);
   return {c,go:!err.length,err};
 }
 const formOf=c=>FORMS[c.form-1];
 function sortieCard(c){
   const f=formOf(c);
-  $('#sortie-card').innerHTML=[['괴물',`${f.name} · ${f.from}`],['시작 도시',`${c.city} · ${CITIES[c.city-1].name} → ${CITIES.length} 마라도까지`],['목숨',c.lives===0?'무한':String(c.lives)],['조작','←→↑↓ 이동·오르기 · X 주먹 · Z 점프 · 화면을 직접 찍어도 된다']].map(([a,b])=>`<div><span>${a}</span><strong>${b}</strong></div>`).join('');
-  $('#stamp-forms').innerHTML=`${f.name} <span>괴물</span>`;
+  $('#sortie-card').innerHTML=[['몬스터',`${f.name} · ${f.from}`],['시작 도시',`${c.city} · ${CITIES[c.city-1].name} → ${CITIES.length} 마라도까지`],['목숨',c.lives===0?'무한':String(c.lives)],['조작','←→↑↓ 이동·오르기 · X 주먹 · Z 점프 · 화면을 직접 찍어도 된다']].map(([a,b])=>`<div><span>${a}</span><strong>${b}</strong></div>`).join('');
+  $('#stamp-forms').innerHTML=`${f.name} <span>몬스터</span>`;
 }
 function result(text,kind){ const r=$('#result'); r.textContent=text; r.dataset.kind=kind||''; }
 function status(t,kind){ const s=$('#status'); s.textContent=t; s.dataset.kind=kind||''; }
@@ -95,7 +95,7 @@ function sortie(){
   catch(e){ result(`동현랭 오류${e.line?` (${e.line}줄)`:''}: ${e.message}`,'error'); status('동현랭 오류','error'); return; }
   const p=parseSortie(out);
   if(p.err.length){ result('출전 규약 오류: '+p.err[0],'error'); status('출전 규약 오류','error'); return; }
-  if(!p.go){ result('정수가 하나도 출력되지 않았다. 첫 정수로 괴물 번호(1~5)를 출력해야 나선다.','error'); status('출전 규약 오류','error'); return; }
+  if(!p.go){ result('정수가 하나도 출력되지 않았다. 첫 정수로 몬스터 번호(1~5)를 출력해야 나선다.','error'); status('출전 규약 오류','error'); return; }
   cfg=p.c; sortieCard(cfg); preview(cfg);
   startGame(cfg);
 }
@@ -155,7 +155,7 @@ function events(){
     if(ev.t==='hurt') log(`${({bullet:'총알',shell:'포탄',rocket:'로켓'})[ev.by]||ev.by}에 맞았다 −${ev.dmg}. 체력 ${Math.round(S.hero.stam)}.`);
     if(ev.t==='collapse') log(`건물 ${ev.i+1}이(가) 무너진다.`);
     if(ev.t==='shrink') log('체력이 다해 사람으로 돌아갔다.');
-    if(ev.t==='respawn') log(`다시 괴물로. 남은 목숨 ${S.lives===Infinity?'∞':S.lives}.`);
+    if(ev.t==='respawn') log(`다시 몬스터로. 남은 목숨 ${S.lives===Infinity?'∞':S.lives}.`);
     if(ev.t==='clear') cityClear();
     if(ev.t==='win') finish(true);
     if(ev.t==='over') finish(false);
@@ -220,7 +220,7 @@ function closeMenu(){ menu=null; $('#menu').hidden=true; paused=false; last=0; }
 function cancelMenu(){ const c=menu&&menu.onCancel; closeMenu(); if(c) c(); }
 function pick(){ const it=menu.items[menu.i]; if(!it||it.off) return; closeMenu(); it.fn(); }
 function confirmMenu(q,opts,back){ openMenu(q,opts.map(([label,fn])=>({label,fn})),back); }
-function mainMenu(){ openMenu('잠시 멈춤',[['계속 간다',()=>{}],['괴물 설명',()=>{ const f=E.form(S); openMenu(`${f.name} · ${f.from}: ${f.desc}`,[['닫기',()=>{}]],mainMenu); }],['저장',saveMenu],['불러오기',loadMenu],['포기하고 출전 준비로',()=>confirmMenu('포기하고 출전 준비로 돌아갈까?',[['포기한다',backToSetup],['계속 간다',()=>{}]],mainMenu)]]); }
+function mainMenu(){ openMenu('잠시 멈춤',[['계속 간다',()=>{}],['몬스터 설명',()=>{ const f=E.form(S); openMenu(`${f.name} · ${f.from}: ${f.desc}`,[['닫기',()=>{}]],mainMenu); }],['저장',saveMenu],['불러오기',loadMenu],['포기하고 출전 준비로',()=>confirmMenu('포기하고 출전 준비로 돌아갈까?',[['포기한다',backToSetup],['계속 간다',()=>{}]],mainMenu)]]); }
 
 /* ---------- 저장·불러오기: 동현전·동현워·동현몬과 같은 브라우저 칸 3개 + .dhsave 파일 ---------- */
 const SAVE_FORMAT='donghyunram-save', SAVE_VERSION=1, SLOT_KEY=n=>'donghyunram:slot'+n, SLOTS=3;
@@ -234,11 +234,11 @@ function restore(data){
   if(data.version!==SAVE_VERSION) throw new Error('지원하지 않는 저장 형식 버전이다('+data.version+').');
   const st=data.state;
   if(!st||!(Number.isInteger(st.city)&&st.city>=1&&st.city<=CITIES.length)) throw new Error('도시 정보가 맞지 않는다.');
-  if(!(Number.isInteger(st.formI)&&FORMS[st.formI])) throw new Error('괴물 정보가 맞지 않는다.');
+  if(!(Number.isInteger(st.formI)&&FORMS[st.formI])) throw new Error('몬스터 정보가 맞지 않는다.');
   if(!Array.isArray(st.builds)||!st.builds.length||st.builds.some(b=>!Array.isArray(b.cells)||b.cells.length!==b.floors)) throw new Error('건물 정보가 맞지 않는다.');
   if(!Array.isArray(st.ens)||st.ens.some(e=>!EN[e.type])) throw new Error('적 정보가 맞지 않는다.');
   if(st.lives==='inf') st.lives=Infinity; else if(!(Number.isInteger(st.lives)&&st.lives>=1&&st.lives<=9)) throw new Error('목숨 정보가 맞지 않는다.');
-  if(!st.hero||!(st.hero.x>=0&&st.hero.x<=E.W)||!(st.hero.stam>=0&&st.hero.stam<=E.MAX_STAM)) throw new Error('괴물 위치가 맞지 않는다.');
+  if(!st.hero||!(st.hero.x>=0&&st.hero.x<=E.W)||!(st.hero.stam>=0&&st.hero.stam<=E.MAX_STAM)) throw new Error('몬스터 위치가 맞지 않는다.');
   if(st.status!=='play') throw new Error('이미 끝난 판이다.');
   st.events=[]; st.shots=st.shots||[]; st.fx=st.fx||[]; st.msgT=0; st.rs=st.rs|0;
   closeMenu(); $('#result-card').hidden=true;
@@ -318,7 +318,7 @@ document.querySelectorAll('#touchpad [data-key]').forEach(b=>{
 });
 addEventListener('blur',()=>{ resetKeys(); });
 
-/* ---------- 화면을 직접 찍기(마우스·손가락): 괴물을 찍으면 주먹, 다른 곳을 찍으면 그리로 간다(건물 위쪽이면 올라간다), 위로 튕기면 점프 ---------- */
+/* ---------- 화면을 직접 찍기(마우스·손가락): 몬스터를 찍으면 주먹, 다른 곳을 찍으면 그리로 간다(건물 위쪽이면 올라간다), 위로 튕기면 점프 ---------- */
 let press=null;
 function boardPos(e){ const r=canvas.getBoundingClientRect(); return {x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height}; }
 canvas.addEventListener('pointerdown',e=>{
@@ -331,7 +331,7 @@ canvas.addEventListener('pointerup',e=>{
   if(menu||mode!=='play') return;
   if(dt<400&&dy<-24&&Math.abs(dx)<Math.abs(dy)*1.5){ /* 위로 튕김: 점프(꼬리콥터는 공중에서 좌우 방향도) */ keys.jumpPressed=true; if(S.hero.hang>1.5&&Math.abs(dx)>10) target={x:p.x,y:p.y}; return; }
   const h=S.hero, hb=E.heroBox(h);
-  if(pr.x>=hb.x-6&&pr.x<=hb.x+hb.w+6&&pr.y>=hb.y-6&&pr.y<=hb.y+hb.h+6){ /* 괴물 자신: 주먹 */ keys.punchPressed=true; target=null; return; }
+  if(pr.x>=hb.x-6&&pr.x<=hb.x+hb.w+6&&pr.y>=hb.y-6&&pr.y<=hb.y+hb.h+6){ /* 몬스터 자신: 주먹 */ keys.punchPressed=true; target=null; return; }
   if(pr.y>=E.GROUND+2){ pr.y=E.GROUND-4; }
   target={x:pr.x,y:pr.y}; h.dir=pr.x<h.x?-1:1;
 });

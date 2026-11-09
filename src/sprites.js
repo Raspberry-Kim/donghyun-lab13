@@ -1,5 +1,5 @@
-/* 동현램 그림: 다섯 괴물·사람·군인·차·전차·헬기를 모두 코드로 새로 그린다. 원작 게임의 그림은 한 점도 쓰지 않는다.
-   괴물은 시리즈의 기존 얼굴(포동이 동현몬 pet_left 머리를 뒤집어 그대로 · 슈슈 동현파 · 나머지 동현주)을 정면으로 붙이고, 몸은 원작처럼 단순한 토막으로 다섯 모두 같은 틀에 색만 바꾼다.
+/* 동현램 그림: 다섯 몬스터·사람·군인·차·전차·헬기를 모두 코드로 새로 그린다. 원작 게임의 그림은 한 점도 쓰지 않는다.
+   몬스터는 시리즈의 기존 얼굴(포동이 동현크 P_idle 머리 그대로 · 슈슈 동현파 원본을 좌우만 뒤집어 · 나머지 동현주)을 붙이고, 몸은 원작처럼 단순한 토막으로 다섯 모두 같은 틀에 색만 바꾼다(포동이만 포동포동).
    먹는 동작은 네 가지(gulp 꿀꺽 · chew 우적우적 · toss 던져 받아먹기 · smoke 식후 담배 한 모금)로 크게 과장한다. */
 (function(root){
 'use strict';
@@ -27,32 +27,31 @@ function blob(g,cx,cy,rx,ry,c,o){ if(o) blobRaw(g,cx,cy,rx+1,ry+1,o); blobRaw(g,
 function blobRaw(g,cx,cy,rx,ry,c){ for(let y=-ry;y<=ry;y++){ const t=y/(ry+0.5); const w=Math.round(rx*Math.sqrt(Math.max(0,1-t*t))); px(g,cx-w,cy+y,w*2+1,1,c); } }
 function rrect(g,x,y,w,h,c,o){ if(o){ px(g,x-1,y,w+2,h,o); px(g,x,y-1,w,h+2,o); } px(g,x,y,w,h,c); }
 
-/* ---------- 작은 사람(창문 안·길·괴물 손 안) ---------- */
+/* ---------- 작은 사람(창문 안·길·몬스터 손 안) ---------- */
 function person(g,x,y,f,wave,c){ /* 발 기준 x,y · 높이 8 */
   const sh=C.pshirt[(c||0)%C.pshirt.length];
   px(g,x-1,y-8,3,3,C.person); px(g,x-1,y-9,3,1,C.hair); px(g,x-1,y-5,3,3,sh); px(g,x-1,y-2,1,2,C.ppants); px(g,x+1,y-2,1,2,C.ppants);
   if(wave){ const u=(f>>3)&1; px(g,x-2,y-7-u,1,2,C.person); px(g,x+3,y-6+u,1,2,C.person); } else { px(g,x-2,y-5,1,2,C.person); px(g,x+3,y-5,1,2,C.person); }
 }
 
-/* ---------- 괴물 ---------- */
+/* ---------- 몬스터 ---------- */
 /* 얼굴은 시리즈의 기존 그림을 그대로 쓴다(글자 격자 · 동현몬·동현주와 같은 팔레트). 정면을 본다.
    포동이: 동현몬의 뒤따르는 포동이(pet_down) 머리 부분(앞다리 윤곽만 털로 메움). 슈슈: 동현파의 슈슈 얼굴을 16×16으로 옮긴 동현주의 그림. 라이언·꼬리콥터·둠가이: 동현주의 얼굴.
-   몸은 원작 괴물처럼 단순한 앞모습 토막(몸통 14×10 · 다리 둘 · 긴 팔)으로 다섯 모두 같고, 색과 작은 장식만 다르다. 라이언만 다리 대신 꼬리. */
+   몸은 원작 몬스터처럼 단순한 앞모습 토막(몸통 14×10 · 다리 둘 · 긴 팔)으로 다섯 모두 같고, 색과 작은 장식만 다르다. 라이언만 다리 대신 꼬리. */
 const PAL={'.':null,'K':'#2e2a38','E':'#ffffff','W':'#f6ecd6','G':'#c9aa78','R':'#d6403a','M':'#e5483a','d':'#9a2620','I':'#8d919c','i':'#c7c9d1','h':'#6b4a2e','c':'#8c7a63','a':'#9a978c','A':'#5d5b53','s':'#efc7a6','S':'#d9a785','p':'#f0a3a3','P':'#d97b86','w':'#f6f2e8','Y':'#f2b705','g':'#6fb04a','5':'#3f8a3a','C':'#2bb0c8','8':'#b5dcf2','7':'#5fa8e0','e':'#49392f','L':'#ff9f86','O':'#d98a3c','k':'#231d18','t':'#7a4a22'};
 const FACE={
 podong:{rows:`
-.......KKKKKK...
-.....KKWWWWWWKK.
-....KWWWWWWWWWWK
-...KWWWKWWWWWWWK
-..KWWWWKWWWWKEWK
-..KWWWWKWWWWKKWK
-..KWWWWKWWWWWWKK
-..KWWWWKWWWWWWKK
-.KKKKKKKWWWWWWK.
-KWKRRRRRRRRRKK..
-KWK.............
-.K..............`,hb:10,eyes:[[12,4,2,2]],mouth:[12,9,4],skin:'W'},
+....KKKKKK....
+..KKWWWWWWKK..
+.KKWWWWWWWWK..
+KWWKWWWWWWWKK.
+KWWKEKKWEKKWWK
+KWWKKKKWKKKWWK
+.KKWKKKWKKKKK.
+.KWWWWWWWWWWK.
+.KWWWWWKKWWWK.
+.KWWWWWKKWWWK.
+..KKWWWWWWKK..`,hb:11,eyes:[[4,4,3,3],[8,4,3,3]],mouth:[8,10,4],skin:'W'},
 shushu:{rows:`
 ....ooo..............ooo....
 ...oHHHo............oHHHo...
@@ -75,7 +74,7 @@ shushu:{rows:`
 ........ossssssssHHo........
 .........ooHsssHHoo.........
 ...........osssso...........
-..........oossssoo..........`,pal:{o:'#63483a',H:'#4b382e',h:'#775242',s:'#efc7a6',e:'#49392f',w:'#fbf4db',b:'#dc9c83',m:'#a87362',c:'#f5ead1',D:'#d48a78',d:'#ad6e62',y:'#edc776',S:'#f4e8cd',R:'#cf6157',r:'#a64b44',L:'#f4e8cd',W:'#f4e8cd',B:'#cf6157',k:'#a64b44',q:'#ef9a8b'},eyes:[[8,12,2,3],[14,12,2,3]],mouth:[12,17,6],skin:'s'},
+..........oossssoo..........`,pal:{o:'#63483a',H:'#4b382e',h:'#775242',s:'#efc7a6',e:'#49392f',w:'#fbf4db',b:'#dc9c83',m:'#a87362',c:'#f5ead1',D:'#d48a78',d:'#ad6e62',y:'#edc776',S:'#f4e8cd',R:'#cf6157',r:'#a64b44',L:'#f4e8cd',W:'#f4e8cd',B:'#cf6157',k:'#a64b44',q:'#ef9a8b'},eyes:[[8,12,2,3],[14,12,2,3]],mouth:[12,17,6],skin:'s',mirror:1},
 lion:{rows:`
 .......KK.......
 ....KKKppKKK....
@@ -128,30 +127,16 @@ K55555555555555K
 ....KKKKKKKK....
 ................`,eyes:[[2,7,3,3],[11,7,3,3]],mouth:[8,12,6],skin:'s'}
 };
-/* 뒷머리: 옆벽을 탈 때는 등을 보인다. 포동이는 동현몬 pet_up의 머리 그대로, 나머지는 얼굴 그림의 윤곽을 살리고 안쪽을 머리카락·살색으로 채운다 */
-const BACK_PODONG=`
-.....KKKKKK.....
-...KKWWWWWWKK...
-..KWWWWWWWWWWK..
-.KWWWWWWWWWWWWK.
-KWWWWWWWWWWWWWWK
-KWWWWWWWWWWWWWWK
-KWWKWWWWWWWWKWWK
-KWWKWWWWWWWWKWWK
-KWWKKWWWWWWKKWWK
-KWWKWWWWWWWWKWWK
-.KKKWWWWWWWWKKK.`.trim().split('\n');
-const BACK_FILL={ shushu:(r,ch)=>'BkqRrh'.includes(ch)?ch:(r<=19?'H':'s'), lion:(r,ch)=>ch==='P'?'P':'p', copter:(r,ch)=>r<=3?ch:'C', doom:(r,ch)=>r<=1?ch:(r===5?'5':r<=11?'g':'s') };
-function backGrid(key,grid,outline){ const H=grid.length,W=grid[0].length, at=(c,r)=>(r<0||r>=H||c<0||c>=W)?'.':grid[r][c];
-  return grid.map((row,r)=>row.split('').map((ch,c)=>{ if(ch==='.') return '.'; const edge=at(c-1,r)==='.'||at(c+1,r)==='.'||at(c,r-1)==='.'||at(c,r+1)==='.'; return edge?outline:BACK_FILL[key](r,ch); }).join('')); }
-for(const k in FACE){ const f=FACE[k]; f.grid=f.rows.trim().split('\n'); f.h=f.grid.length; f.w=f.grid[0].length; f.back=k==='podong'?BACK_PODONG:backGrid(k,f.grid,f.pal?'o':'K'); }
-/* 키(발에서 머리 꼭대기까지): 얼굴 줄 수 + 몸통 10 + 다리 6. 포동이 27, 나머지 32 */
-const HGT={podong:26,shushu:38,lion:32,copter:32,doom:32};
+/* 슈슈의 동현파 원본 얼굴은 왼쪽(-x)을 본다. 몸틀은 +x가 앞이므로 좌우만 뒤집어(mirror) 붙인다. 점 하나도 바꾸지 않는다 */
+function mirrorFace(f){ const W=f.w; f.grid=f.grid.map(r=>r.split('').reverse().join('')); f.eyes=f.eyes.map(([c,r,w,h])=>[W-c-w,r,w,h]); const [mc,mr,mw]=f.mouth; f.mouth=[W-mc-(mw&1),mr,mw]; }
+for(const k in FACE){ const f=FACE[k]; f.grid=f.rows.trim().split('\n'); f.h=f.grid.length; f.w=f.grid[0].length; if(f.mirror) mirrorFace(f); }
+/* 키(발에서 머리 꼭대기까지): 얼굴 줄 수 + 몸통 10 + 다리 6. 포동이 27, 슈슈 38, 나머지 32 */
+const HGT={podong:27,shushu:38,lion:32,copter:32,doom:32};
 /* 글자 격자 그리기: (x0,y0)가 왼쪽 위 */
 function grid(g,rows,x0,y0,pal){ pal=pal||PAL; for(let r=0;r<rows.length;r++){ const row=rows[r]; for(let c=0;c<row.length;c++){ const col=pal[row[c]]; if(col) px(g,x0+c,y0+r,1,1,col); } } }
 /* 얼굴 + 표정: 눈(open·closed·x·wide·happy·half)과 입(0~1) */
 function drawFace(g,P,key,x0,y0){
-  const F=FACE[key], pal=F.pal||PAL; if(P.view==='back'){ grid(g,F.back,x0,y0,pal); return; } grid(g,F.grid,x0,y0,pal); const skin=pal[F.skin], eyeBg=pal[F.eye||'E'];
+  const F=FACE[key], pal=F.pal||PAL; grid(g,F.grid,x0,y0,pal); const skin=pal[F.skin], eyeBg=pal[F.eye||'E'];
   if(P.eyes!=='open'){ for(const [c,r,w,h] of F.eyes){ const x=x0+c, y=y0+r; px(g,x,y,w,h,skin);
     if(P.eyes==='closed') px(g,x,y+h-1,w,1,C.line);
     else if(P.eyes==='x'){ px(g,x,y,1,1,C.line); px(g,x+w-1,y,1,1,C.line); px(g,x+((w-1)>>1),y+((h-1)>>1),1,1,C.line); px(g,x,y+h-1,1,1,C.line); px(g,x+w-1,y+h-1,1,1,C.line); }
@@ -160,26 +145,36 @@ function drawFace(g,P,key,x0,y0){
     else if(P.eyes==='wide'){ px(g,x-1,y-1,w+2,h+2,C.line); px(g,x,y,w,h,C.eye); px(g,x+(w>>1),y+(h>>1),1,1,C.pupil); } } }
   const mh=Math.round(P.mouth*6*(P.mouthBoost||1)); if(mh>0){ const [mc,mr,mw]=F.mouth; const mx=x0+mc-(mw>>1), my=y0+mr-1; px(g,mx-1,my-1,mw+2,mh+2,C.line); px(g,mx,my,mw,mh,C.mouth); if(mh>2) px(g,mx,my,mw,1,C.teeth); if(mh>3) px(g,mx+1,my+mh-1,mw-2,1,C.tongue); }
 }
-/* 몸 토막: 색만 바꿔 다섯 괴물이 함께 쓴다. 땅·공중에서는 가는 쪽을 보는 옆모습(+x가 앞), 옆벽에 붙어 있을 때는 벽을 향해 등을 보인다 */
+/* 몸 토막: 색만 바꿔 다섯 몬스터가 함께 쓴다. 땅·공중에서는 가는 쪽을 보는 옆모습(+x가 앞), 옆벽에 붙어 있을 때는 앞 얼굴이 보이는 앞모습(front).
+   포동이는 포동포동하게(chub): 몸통이 넓고 모서리가 둥글며 배가 불룩하고 다리가 한 칸 굵다 */
+function roundBox(g,x,y,w,h,c,L,ins){ /* ins(r): r줄의 좌우 들여쓰기 */
+  px(g,x+ins(0),y-1,w-2*ins(0),1,L); px(g,x+ins(h-1),y+h,w-2*ins(h-1),1,L);
+  for(let r=0;r<h;r++){ const i=ins(r); px(g,x+i-1,y+r,w-2*i+2,1,L); px(g,x+i,y+r,w-2*i,1,c); } }
 function body(g,P,t,key,S){
-  const up=P.body, L=C.line, legs=P.leg, arms=P.arm, F=FACE[key], back=P.view==='back';
-  const headH=back?F.back.length:(F.hb||F.h), hx=-(F.w>>1)+(back?0:2)+P.lean, hy=-16-headH+up+P.head; /* 머리 왼쪽 위. 옆모습은 머리를 앞으로 2칸 */
+  const up=P.body, L=C.line, legs=P.leg, arms=P.arm, F=FACE[key], front=P.view==='front', ch=!!S.chub;
+  const headH=F.hb||F.h, hx=-(F.w>>1)+(front?0:2)+P.lean, hy=-16-headH+up+P.head; /* 머리 왼쪽 위. 옆모습은 머리를 앞으로 2칸 */
   const hand=(x,y)=>{ if(S.glove){ px(g,x-3,y-3,7,6,L); px(g,x-2,y-2,5,4,S.glove); px(g,x-2,y-2,3,1,S.glove2); } else { px(g,x-2,y-2,5,5,L); px(g,x-1,y-1,3,3,S.hand); px(g,x-1,y+1,1,1,L); px(g,x+1,y+1,1,1,L); } };
-  const foot=(x,y)=>{ if(back){ px(g,x-3,y-2,7,2,S.foot); px(g,x-3,y-1,7,1,L); } else { px(g,x-2,y-2,7,2,S.foot); px(g,x-2,y-1,7,1,L); px(g,x+4,y-2,1,1,L); } }; /* 옆모습은 발끝이 앞(+x)을 향한다 */
-  const tw=back?14:10, tx=-(tw>>1), shF=back?-4:-2, shN=back?4:3, hipF=back?-4:-2, hipN=back?4:2;
-  /* 뒤쪽 팔 */ limb(g,shF,-13+up,arms[1][0],arms[1][1]+up,4,S.arm,L); hand(arms[1][0],arms[1][1]+up);
+  const foot=(x,y)=>{ if(front){ px(g,x-3,y-2,7,2,S.foot); px(g,x-3,y-1,7,1,L); } else { px(g,x-2,y-2,7,2,S.foot); px(g,x-2,y-1,7,1,L); px(g,x+4,y-2,1,1,L); } }; /* 옆모습은 발끝이 앞(+x)을 향한다 */
+  const tw=front?(ch?16:14):(ch?14:10), th=ch?11:10, tx=-(tw>>1)+(ch&&!front?1:0);
+  const shF=front?-(tw>>1)+3:(ch?-4:-2), shN=front?(tw>>1)-3:(ch?5:3), hipF=front?-(tw>>1)+3:(ch?-3:-2), hipN=front?(tw>>1)-3:(ch?3:2);
+  const aw=4, lw=ch?6:5, ins=ch?(r=>r===0||r===th-1?2:(r===1||r===th-2?1:0)):(r=>0);
+  /* 뒤쪽 팔 */ limb(g,shF,-13+up,arms[1][0],arms[1][1]+up,aw,S.arm,L); hand(arms[1][0],arms[1][1]+up);
   if(S.tail){ /* 라이언: 다리 대신 꼬리 토막 셋이 뒤로 끌린다 */ blob(g,-4,-4+up,4,3,S.leg,L); blob(g,-9,-3+up,3,2,S.leg2,L); blob(g,-13,-2,2,2,S.leg,L); }
-  else { limb(g,hipF,-8+up,legs[1][0],legs[1][1]-3,5,S.leg2,L); foot(legs[1][0],legs[1][1]); limb(g,hipN,-8+up,legs[0][0],legs[0][1]-3,5,S.leg,L); foot(legs[0][0],legs[0][1]); }
-  /* 몸통 */ px(g,tx-1,-17+up,tw+2,12,L); px(g,tx,-16+up,tw,10,S.body);
-  if(!back){ if(S.belly) px(g,-1,-14+up,5,7,S.belly); if(S.emblem){ px(g,0,-13+up,4,4,S.emblem); px(g,1,-12+up,2,2,'#ffd36a'); } }
+  else { limb(g,hipF,-8+up,legs[1][0],legs[1][1]-3,lw,S.leg2,L); foot(legs[1][0],legs[1][1]); limb(g,hipN,-8+up,legs[0][0],legs[0][1]-3,lw,S.leg,L); foot(legs[0][0],legs[0][1]); }
+  /* 몸통 */ if(ch) roundBox(g,tx,-16+up,tw,th,S.body,L,ins); else { px(g,tx-1,-17+up,tw+2,12,L); px(g,tx,-16+up,tw,10,S.body); }
+  if(ch){ blobRaw(g,front?0:2,-10+up,front?5:4,3,S.belly); } /* 불룩한 배 */
+  else { if(S.belly) px(g,front?-2:-1,-14+up,5,7,S.belly); if(S.emblem){ px(g,front?-2:0,-13+up,4,4,S.emblem); px(g,front?-1:1,-12+up,2,2,'#ffd36a'); } }
   if(S.stripe) for(let y=-15;y<-7;y+=3) px(g,tx,y+up,tw,1,S.stripe);
-  if(S.collar){ px(g,tx,-16+up,tw,2,S.collar); if(!back) px(g,2,-14+up,2,2,'#f2b705'); } if(S.tag&&!back){ px(g,2,-16+up,2,2,'#f2b705'); } if(S.belt){ px(g,tx,-8+up,tw,2,S.belt); }
+  if(S.collar){ const i=ins(0); px(g,tx+i,-16+up,tw-2*i,1,S.collar); px(g,tx+ins(1),-15+up,tw-2*ins(1),1,S.collar); px(g,front?-1:3,-14+up,2,2,'#f2b705'); } /* 목걸이와 노란 이름표 */
+  if(S.belt){ px(g,tx,-8+up,tw,2,S.belt); }
+  const nearArm=()=>{ limb(g,shN,-13+up,arms[0][0],arms[0][1]+up,aw,S.arm,L); hand(arms[0][0],arms[0][1]+up); };
+  if(front) nearArm(); /* 앞모습은 팔을 머리 뒤에 두어 얼굴을 가리지 않는다 */
   /* 머리 */ drawFace(g,P,key,hx,hy);
-  /* 앞쪽 팔 */ limb(g,shN,-13+up,arms[0][0],arms[0][1]+up,4,S.arm,L); hand(arms[0][0],arms[0][1]+up);
+  if(!front) nearArm(); /* 옆모습은 앞쪽 팔이 맨 앞 */
   items(g,P,t);
 }
 const STYLE={
-  podong:{body:C.fur,belly:'#fdf7ea',arm:C.fur,hand:C.fur,leg:C.fur,leg2:C.fur2,foot:C.fur2,tag:1},
+  podong:{body:C.fur,belly:'#fdf7ea',arm:C.fur,hand:C.fur,leg:C.fur,leg2:C.fur2,foot:C.fur2,collar:C.collar,chub:1},
   shushu:{body:C.glove,belly:C.glove2,arm:C.skin,glove:C.glove,glove2:C.glove2,leg:C.skin,leg2:C.skin2,foot:C.hair2,belt:C.short},
   lion:{body:C.worm,stripe:C.worm2,arm:C.worm,hand:C.worm2,leg:C.worm,leg2:C.worm2,foot:C.worm2,tail:1},
   copter:{body:C.cop,belly:'#b5dcf2',arm:C.cop,hand:C.cop3,leg:C.cop,leg2:C.cop2,foot:C.cop2},
@@ -197,10 +192,10 @@ function poseOf(h,t,f){
   if(h.state==='sit'){ /* 무너진 건물과 함께 떨어져 주저앉음: 몸이 내려앉고 다리는 앞으로, 손은 바닥, 눈은 빙글 */
     P.sit=true; P.body=5; P.leg=[[8,0],[-5,0]]; P.arm=[A(9,15),A(-6,15)]; P.eyes='x'; P.mouth=0.5; P.head=1; P.extra.push({k:'stars',a:0.5}); return P; }
   if(h.state==='ride'){ /* 무너지는 건물에 매달려 내려가는 중: 두 손으로 꽉 잡고 눈이 커진다 */
-    const inw=-(h.side||1)*(h.dir||1); P.view='back'; P.arm=[A(inw*8,-13),A(inw*6,-9)]; P.leg=[[inw*4,-3],[inw*1,-1]]; P.lean=inw*2; P.eyes='wide'; P.mouth=0.7; P.head=-1; return P; }
-  if(h.state==='climb'){ /* 옆벽에 붙어 오른다: 몸은 바라보는 쪽, 두 손은 벽 모서리를 번갈아 잡는다 */
+    const inw=-(h.side||1)*(h.dir||1); P.view='front'; P.arm=[A(inw*8,-13),A(inw*6,-9)]; P.leg=[[inw*4,-3],[inw*1,-1]]; P.lean=inw*2; P.eyes='wide'; P.mouth=0.7; P.head=-1; return P; }
+  if(h.state==='climb'){ /* 옆벽에 붙어 오른다: 앞 얼굴이 보이는 앞모습, 두 손은 벽 모서리를 번갈아 잡는다 */
     const c=Math.floor(h.climbT/8)%2; const inw=-(h.side||1)*(h.dir||1); /* 바라보는 기준으로 벽이 있는 쪽(+1 앞, -1 뒤) */
-    P.view='back'; P.arm=[A(inw*8,c?-14:-6),A(inw*5,c?-6:-14)]; P.leg=[[inw*4,c?-4:0],[inw*1,c?0:-4]]; P.lean=inw*2;
+    P.view='front'; P.arm=[A(inw*8,c?-14:-6),A(inw*5,c?-6:-14)]; P.leg=[[inw*4,c?-4:0],[inw*1,c?0:-4]]; P.lean=inw*2;
     if(h.punchT>0){ const k=1-h.punchT/16; const ext=k<0.6?k/0.6:1-(k-0.6)/0.4*0.4; P.arm=[punchArm(A,h,ext,(h.pdx||h.dir)===h.side?34:20),A(inw>0?-6:6,-8)]; /* 옆 건물 쪽은 골목 너머까지 팔을 뻗는다 */ P.mouth=0.4; P.leg=[[inw*4,-2],[inw*1,0]]; P.lean=0; }
   } else if(h.state==='air'){ const fly=h.hang>1.5; P.arm=fly?[A(9,-6),A(-9,-6)]:[A(8,-8),A(-6,0)]; P.leg=fly?[[3,2],[-3,2]]:[[5,-3],[-4,1]]; P.mouth=0.3; P.eyes=fly?'open':'wide'; }
   else { /* 땅 */
@@ -258,7 +253,7 @@ function shrunk(g,h,t){ const k=h.shrinkT; const sc=k>90?1-(120-k)/30*0.6:0.4; i
   const f=(t>>2)&1; px(g,-2,-10,5,5,C.skin); px(g,-2,-11,5,1,C.hair); px(g,-2,-5,5,3,C.pshirt[1]); px(g,-2,-2,2,2+f,C.ppants); px(g,1,-2,2,3-f,C.ppants); px(g,-3,-6,1,2,C.skin); px(g,3,-6,1,2,C.skin); px(g,-2,-8,5,2,C.skin); }
 
 
-/* 괴물 한 마리 그리기: form 객체, 상태 h, 시간 t, 발 기준 좌표 (x,y) */
+/* 몬스터 한 마리 그리기: form 객체, 상태 h, 시간 t, 발 기준 좌표 (x,y) */
 function drawMonster(g,form,h,t,x,y){
   g.save(); g.translate(Math.round(x),Math.round(y));
   if(h.shrinkT>0){ if(h.dir<0) g.scale(-1,1); if(h.shrinkT>96&&((t>>1)&1)){ g.globalAlpha=0.5; } shrunk(g,h,t); g.restore(); return; }
@@ -267,7 +262,7 @@ function drawMonster(g,form,h,t,x,y){
   const key=STYLE[form.key]?form.key:'podong'; body(g,P,t,key,STYLE[key]);
   g.restore();
 }
-/* 표지·머리글용 서 있는 괴물(가짜 상태) */
+/* 표지·머리글용 서 있는 몬스터(가짜 상태) */
 function drawIdle(g,form,t,x,y,dir){ drawMonster(g,form,{state:'ground',dir:dir||1,punchT:0,eatT:0,hurtT:0,shrinkT:0,walkT:0,climbT:0,hang:form.hang},t,x,y); }
 
 /* ---------- 적 ---------- */
