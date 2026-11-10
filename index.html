@@ -1660,7 +1660,7 @@ function building(g,S,b,t,night){
   for(let r=0;r<b.floors;r++) for(let col=0;col<b.cols;col++) wallCell(g,b,c,r,col,b.cells[r][col],night,hk);
   if(warn){ cracks(g,b,top,warn); }
   /* 1층 가운데 문 */ const dx=b.x+Math.floor(b.w/2)-3; if(b.cells[0].every(cl=>cl.hp>0)){ if(hk){ /* 한옥 두 짝 띠살문과 돌 디딤 */ px(g,dx-1,GROUND-13,9,11,c.trim); px(g,dx,GROUND-12,3,10,HJ.day); px(g,dx+4,GROUND-12,3,10,HJ.day); for(let y=GROUND-11;y<GROUND-2;y+=2) { px(g,dx,y,3,1,HJ.lat); px(g,dx+4,y,3,1,HJ.lat); } px(g,dx-2,GROUND-2,11,2,'#b9ad98'); } else { px(g,dx,GROUND-12,7,12,c.trim); px(g,dx+1,GROUND-11,5,11,c.door); px(g,dx+2,GROUND-10,3,3,GL.a); px(g,dx+4,GROUND-6,1,1,c.trim); } }
-  if(hk){ /* 현판: 맨 위층 처마 밑 가운데, 뚱·또·뿡 중 한 글자 */ const tr=b.floors-1, tc=Math.min(b.cols-1,Math.floor(b.cols/2)); if(b.cells[tr][tc].hp>0&&(b.cols===1||b.cells[tr][Math.max(0,Math.ceil(b.cols/2)-1)].hp>0)){ const qx=b.x+Math.floor(b.w/2)-7, qy=top+2; px(g,qx,qy,14,13,'#c8a040'); px(g,qx+1,qy+1,12,11,'#2a1a12'); g.save(); g.font='900 11px Pretendard, sans-serif'; g.textBaseline='middle'; g.textAlign='center'; g.fillStyle='#ffd25a'; g.fillText('뚱또뿡'[b.i%3],qx+7,qy+7.5); g.restore(); } }
+  if(hk){ /* 광고판: 맨 위층 처마 밑 가운데에 트램 옆구리와 같은 광고판(SP.adPanel 10×5, 세 가지 돌아가며) */ const tr=b.floors-1, tc=Math.min(b.cols-1,Math.floor(b.cols/2)); if(b.cells[tr][tc].hp>0&&(b.cols===1||b.cells[tr][Math.max(0,Math.ceil(b.cols/2)-1)].hp>0)){ SP.adPanel(g,b.x+Math.floor(b.w/2)-5,top+4,b.i%3); } }
   /* 옥상: 난간 위에 동네 양식(Cc.roof)의 지붕 장식. 몬스터가 서는 높이(top) 위 10px 안에 둔다 */
   px(g,b.x-1,top-2,b.w+2,3,c.roof); px(g,b.x-1,top-2,b.w+2,1,c.roof2); px(g,b.x,top+1,b.w,1,c.wall2);
   roofDeco(g,b,c,top,E.cityOf(S).roof,night);
