@@ -1,10 +1,10 @@
 // 화면 시험: node qa/ui.cjs (build 뒤 index.html을 파일로 연다)
 // 첫 화면·규약 오류·예제 다섯·키보드·마우스 찍기(몬스터=주먹, 길=걷기, 위로 튕김=점프)·메뉴 저장 칸 3개·.dhsave·첫 화면 칸 목록·클리어 카드→다음 도시·결과 카드·전체 화면·휴대폰 터치·시리즈 띠·콘솔 오류
 const {chromium}=require('/home/user/node_modules/playwright'); const path=require('path'); const assert=require('assert'); const fs=require('fs');
-const url='file://'+path.join(__dirname,'..','index.html');
+const url=process.argv[2]||'file://'+path.join(__dirname,'..','index.html');
 const H='window.__donghyunram';
 (async()=>{
-  const b=await chromium.launch(); const errs=[]; let n=0; const ok=(name)=>{ n++; console.log('ok',name); };
+  const b=await chromium.launch({channel:'chromium'}); const errs=[]; let n=0; const ok=(name)=>{ n++; console.log('ok',name); };
   const p=await b.newPage({viewport:{width:1280,height:900}});
   p.on('pageerror',e=>errs.push(e.message)); p.on('console',m=>{ if(m.type()==='error') errs.push(m.text()); });
   await p.goto(url); await p.waitForTimeout(400);

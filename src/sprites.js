@@ -311,7 +311,10 @@ function car(g,e,t){ const taxi=e.type==='taxi'; g.save(); g.translate(Math.roun
   if(taxi){ px(g,-3,-12,6,2,C.taxi2); px(g,-2,-12,4,1,'#fff6c9'); for(let i=0;i<12;i++) px(g,-12+i*2,-3,1,1,(i&1)?C.taxi2:'#fff'); }
   else { px(g,-2,-12,6,2,C.copcar2); px(g,-2,-12,2,2,((t>>3)&1)?C.light:C.light2); px(g,2,-12,2,2,((t>>3)&1)?C.light2:C.light); px(g,-12,-4,24,2,C.copcar2); px(g,-5,-5,1,4,C.copcar2); px(g,-3,-4,1,1,'#f2b705'); }
   px(g,-9,-3,5,4,C.wheel); px(g,5,-3,5,4,C.wheel); px(g,-8,-2,3,2,'#8a8d92'); px(g,6,-2,3,2,'#8a8d92'); px(g,-7,-2,1,1,'#c9ccd1'); px(g,7,-2,1,1,'#c9ccd1');
-  px(g,11,-5,1,2,'#fff2b0'); px(g,-12,-5,1,2,'#ff5a5a'); /* 전조등·후미등 */ g.restore(); }
+  px(g,2,-8,2,2,'#6694a3');px(g,3,-8,1,1,'#cbdcd6'); /* 앞 유리의 빗면 */
+  px(g,8,-5,3,1,hi);px(g,8,-4,3,1,b2);px(g,-5,-5,1,3,b2);px(g,3,-5,1,3,b2);
+  px(g,-3,-5,2,1,hi);px(g,6,-5,1,1,hi); /* 문 이음새·손잡이·보닛 */
+  px(g,11,-5,1,2,'#fff2b0'); px(g,-12,-5,1,2,'#df7463');px(g,11,-2,2,1,'#c5d1c9'); /* 전조등·후미등·범퍼 */ g.restore(); }
 function tank(g,e,t){ g.save(); g.translate(Math.round(e.x),Math.round(e.y)); if(e.dir<0) g.scale(-1,1); const L=C.line; const tr=(t>>2)&1;
   px(g,-15,-6,30,6,L); px(g,-14,-5,28,4,C.tank2); for(let i=0;i<7;i++) px(g,-13+i*4+tr,-5,2,1,C.tank3); for(let i=0;i<7;i++) px(g,-13+i*4+(1-tr),-2,2,1,C.tank3); /* 궤도와 도는 쇠판 */
   for(let i=0;i<3;i++){ px(g,-9+i*8,-4,4,2,'#2a3020'); px(g,-8+i*8,-4,2,1,C.tank3); } /* 바퀴 */
@@ -335,7 +338,8 @@ function tram(g,e,t){ g.save(); g.translate(Math.round(e.x),Math.round(e.y)); if
   for(const car of [0,1]){ const ox=car===0?2:-26; /* 앞 량 x: 2..28 · 뒤 량 x: -26..0 */
     px(g,ox-1,-14,28,1,L); px(g,ox-1,-1,28,1,L); px(g,ox-1,-13,1,12,L); px(g,ox+26,-13,1,12,L); /* 윤곽 */
     px(g,ox,-13,26,12,body); px(g,ox,-13,26,1,hi); px(g,ox,-6,26,1,cream); px(g,ox,-5,26,4,body2);
-    for(let i=0;i<4;i++){ px(g,ox+2+i*6,-11,4,4,C.glass); px(g,ox+2+i*6,-11,2,1,'#e4f4fb'); px(g,ox+1+i*6,-11,1,4,body2); } /* 창 넷 */
+    px(g,ox+1,-14,24,1,body2);px(g,ox+3,-14,20,1,hi); /* 얕게 솟은 지붕 */
+    for(let i=0;i<4;i++){ px(g,ox+2+i*6,-11,4,4,'#7199a3'); px(g,ox+2+i*6,-11,2,1,'#d1e0d5');px(g,ox+3+i*6,-8,3,1,'#4c707f'); px(g,ox+1+i*6,-11,1,4,body2); } /* 창 넷 */
     if(car===0){ px(g,ox+24,-11,1,4,'#fff2b0'); px(g,ox+21,-8,2,3,body2); } else { px(g,ox,-11,1,4,'#ff5a5a'); } /* 전조등·후미등 */
     { const ad=car===0?(e.ad|0):(e.ad2==null?(e.ad|0):e.ad2|0); g.save(); if(e.dir<0){ g.translate(ox*2+26,0); g.scale(-1,1); } adPanel(g,ox+8,-6,ad%3); g.restore(); } /* 옆구리 광고판(뒤집혀도 바로 보이게) */
     px(g,ox+4,-2,5,3,C.wheel); px(g,ox+17,-2,5,3,C.wheel); px(g,ox+5,-1,3,1,'#8a8d92'); px(g,ox+18,-1,3,1,'#8a8d92'); }

@@ -21,7 +21,37 @@ const HANOK=[
 ];
 const HJ={day:'#f6eedb',day2:'#e6dbc2',lat:'#8a6446',lit:'#ffdc8c',lit2:'#f0b35a'};
 const isHanok=(S)=>E.cityOf(S).bg==='valley';
-function palOf(S,n){ return isHanok(S)?HANOK[n%HANOK.length]:WALLS[n%WALLS.length]; }
+// v0.22: 저장 자료·충돌 격자는 그대로 두고, 동네별 건축 재료만 그리기 단계에서 고른다.
+const FACADES=['home','shop','stone','civic','brick','home','medical','brick','balcony','glass','villa','hanok'];
+const MATERIALS={
+  home:[['#d5cdb7','#adb3ab','#f0e5ca'],['#b98369','#8d6051','#dba58a'],['#a4b5b5','#71898e','#d1ddda']],
+  shop:[['#bb876b','#855e4f','#e5b993'],['#a8b9ad','#71897f','#dce2c9'],['#d2bc94','#a2886b','#efe0bb']],
+  stone:[['#d3c5a5','#a59882','#eee2c7'],['#a3aaa4','#748480','#d2d7c6']],
+  civic:[['#d8d3c1','#a4aea6','#f0ecdb'],['#a6b5b4','#748b8d','#d1ddda']],
+  brick:[['#ae7665','#7d5350','#d3a38a'],['#b6aa8a','#8b806c','#d9cfaf']],
+  medical:[['#d7e1d9','#9aafa9','#f1f3e4'],['#b1c6c1','#799a98','#e2ebe1']],
+  balcony:[['#c8d7cf','#8ca8a5','#eef0de'],['#b5c4c5','#7b979d','#dbe4dc']],
+  glass:[['#496d7d','#304b5b','#85a6ad'],['#607a83','#3c5564','#a9c1bd']],
+  villa:[['#c5ad8a','#8f7c66','#e6d6b4'],['#c09379','#8b6559','#e5c3a0']]
+};
+const SKY=[
+  ['#8eafb9','#e5ddc5','#a6b9b5'],['#89abb8','#e3dec9','#a4b6b3'],
+  ['#b98e79','#edcba6','#bdad96'],['#9cafad','#e5e0cc','#acbbb0'],
+  ['#94adb9','#e1dcca','#a6b5b4'],['#b1a0ac','#e8d4c3','#b6b2b5'],
+  ['#bd947c','#ecd3b3','#bcae9c'],['#7e93a6','#c8cbd0','#9aa7b0'],
+  ['#bc8972','#ebbf9a','#baaa9e'],['#354957','#879f9f','#536c78'],
+  ['#344958','#839a99','#526e78'],['#283b4b','#778c94','#435c6d']
+];
+function visualCity(S){const c=E.cityOf(S),p=SKY[(S.city-1)%SKY.length];return {...c,sky:p.slice(0,2),fog:p[2]};}
+function palOf(S,n){
+  const night=isNight(E.cityOf(S)),kind=FACADES[(S.city-1)%12];
+  if(isHanok(S)){const p=HANOK[n%HANOK.length];return {...p,wall:shade(p.wall,-0.13),wall3:shade(p.wall3,-0.08)};}
+  const m=MATERIALS[kind],v=m[n%m.length],dark=night?-0.24:0;
+  return {kind,wall:shade(v[0],dark),wall2:shade(v[1],dark),wall3:shade(v[2],dark),
+    trim:night?'#9caeaa':'#e8dfc8',roof:'#3a4e53',roof2:night?'#6f8589':'#8a9f9f',door:'#30464c',
+    glass:night?'#354e60':'#7097a0',glass2:night?'#293e50':'#4d7481',glint:night?'#688891':'#b0c7c2',
+    accent:['#a6614f','#497c79','#a48653'][n%3]};
+}
 const GL={hi:'#e4f4fb',a:'#a6d6ea',b:'#6fa9c4',dark:'#1e1922',inner:'#2b242e',inner2:'#3a3240',lit:'#ffd98a',lit2:'#e8a94e',rebar:'#6d5a48'};
 const hsh=(a,b,c)=>{ let h=(a*73856093)^(b*19349663)^((c|0)*83492791); h=Math.imul(h^(h>>>13),1274126177); return (h^(h>>>16))>>>0; };
 function lum(hex){ const n=parseInt(hex.slice(1),16); return (0.299*(n>>16)+0.587*((n>>8)&255)+0.114*(n&255))/255; }
@@ -29,7 +59,7 @@ function isNight(Cc){ return lum(Cc.sky[0])<0.42; }
 
 /* ---------- 배경 ---------- */
 function backdrop(g,S,t){
-  const Cc=E.cityOf(S), night=isNight(Cc);
+  const Cc=visualCity(S), night=isNight(E.cityOf(S));
   const gr=g.createLinearGradient(0,0,0,GROUND); gr.addColorStop(0,Cc.sky[0]); gr.addColorStop(1,Cc.sky[1]); g.fillStyle=gr; g.fillRect(0,0,W,H);
   if(night){ /* 별·달 */
     for(let i=0;i<34;i++){ const h=hsh(i,7,S.city); const x=h%W, y=12+(h>>9)%90; const tw=((t>>3)+i)%7===0; px(g,x,y,1,1,tw?'rgba(255,255,255,.95)':'rgba(255,255,255,.55)'); }
@@ -38,16 +68,16 @@ function backdrop(g,S,t){
     g.save(); g.globalAlpha=0.35; SP.blob(g,262,34,15,15,'#fff7d6'); g.globalAlpha=0.6; SP.blob(g,262,34,11,11,'#fff3c4'); g.restore(); SP.blob(g,262,34,8,8,'#fffbe8');
   }
   /* 구름: 둥근 덩어리 셋을 겹친다 */
-  for(let i=0;i<5;i++){ const cx=((i*83+t*0.06)%(W+70))-35, cy=18+(i*29)%44, s=0.8+(i%3)*0.3; const c1=night?'rgba(200,205,225,.55)':'rgba(255,255,255,.85)', c2=night?'rgba(170,178,205,.5)':'rgba(236,243,250,.85)';
+  for(let i=0;i<4;i++){ const cx=((i*83+t*0.06)%(W+70))-35, cy=18+(i*29)%44, s=0.8+(i%3)*0.3; const c1=night?'rgba(173,193,200,.24)':'rgba(247,239,216,.65)', c2=night?'rgba(122,148,162,.22)':'rgba(218,222,210,.5)';
     SP.blob(g,cx,cy+2,Math.round(13*s),Math.round(3*s),c2); SP.blob(g,cx-4*s,cy,Math.round(6*s),Math.round(4*s),c1); SP.blob(g,cx+4*s,cy-1,Math.round(7*s),Math.round(5*s),c1); SP.blob(g,cx+11*s,cy+1,Math.round(5*s),Math.round(3*s),c1); }
   /* 먼 풍경: 동네마다 다른 랜드마크(Cc.bg)를 안개색으로, 그 앞에 낮은 먼 건물 한 겹 */
   scenery(g,S,Cc,t,night);
   if(Cc.bg!=='valley') for(let i=0;i<13;i++){ if(i%3===1) continue; const h=hsh(i,5,S.city); const bw=14+(h%10), bh=4+((h>>4)%8), bx=i*26-4+((h>>8)%9); px(g,bx,GROUND-bh-6,bw,bh+6,Cc.fog); px(g,bx,GROUND-bh-6,bw,1,'rgba(255,255,255,.18)');
     for(let r=0;r<Math.floor(bh/6);r++) for(let c=0;c<Math.floor(bw/5);c++){ const on=hsh(i,r,c+S.city)%5===0; if(night?on:((r+c)%2===0)) px(g,bx+2+c*5,GROUND-bh-2+r*6,2,2,night?(on?'rgba(255,220,140,.9)':'rgba(255,255,255,.1)'):'rgba(255,255,255,.22)'); } }
   /* 보도·연석·길 */
-  px(g,0,GROUND-6,W,6,'#8a8d92'); px(g,0,GROUND-6,W,1,'#b9bcc1'); for(let x=0;x<W;x+=8) px(g,x,GROUND-5,1,5,'#7a7d82'); px(g,0,GROUND-1,W,1,'#5e6166');
-  px(g,0,GROUND,W,H-GROUND,'#41444b'); px(g,0,GROUND,W,1,'#55585f'); for(let i=0;i<40;i++){ const h=hsh(i,11,1); px(g,(h%W),GROUND+2+((h>>9)%20),1,1,'rgba(255,255,255,.05)'); }
-  for(let x=0;x<W;x+=24) px(g,x,GROUND+10,12,2,'#d9d3b2'); px(g,0,GROUND+22,W,2,'#2b2d33');
+  px(g,0,GROUND-6,W,6,night?'#788788':'#b7b5a4'); px(g,0,GROUND-6,W,1,night?'#9daaa6':'#ddd5bc'); for(let x=0;x<W;x+=12) px(g,x,GROUND-5,1,4,'rgba(46,63,65,.2)'); px(g,0,GROUND-1,W,1,'#475a60');
+  px(g,0,GROUND,W,H-GROUND,night?'#293b46':'#455a61'); px(g,0,GROUND,W,1,'#718085'); for(let i=0;i<24;i++){ const h=hsh(i,11,1); px(g,(h%W),GROUND+2+((h>>9)%20),1,1,'rgba(255,255,255,.04)'); }
+  for(let x=0;x<W;x+=28) px(g,x,GROUND+12,13,1,night?'#9c9b7e':'#cbbd90'); px(g,0,GROUND+22,W,2,'#273b43');
   /* 트램 선로: 길 위에 가는 쇠줄 두 가닥 */ px(g,0,GROUND+1,W,1,'#6a6d74'); px(g,0,GROUND+4,W,1,'#6a6d74'); for(let x=2;x<W;x+=6) px(g,x,GROUND+2,1,2,'rgba(0,0,0,.18)');
   /* 맨홀 */ px(g,150,GROUND+15,10,2,'#30333a'); px(g,151,GROUND+15,8,1,'#5a5e66');
   /* 가로등: 골목 가운데와 양 끝 */
@@ -155,6 +185,58 @@ function rubble(g,b,c){
 /* 벽 조각 한 칸: 뚫린 자리·모서리 터진 자리는 비운다 */
 /* 모서리가 터진 폭: 층마다 3~6px로 들쭉날쭉 */
 function openW(b,r,col){ return 3+(hsh(b.i,r*5+col,13)%4); }
+// 재료별 창과 벽체. 모두 원래 20×16 타격 칸 안에 그리며 파괴 칸에서는 호출하지 않는다.
+function facadeCell(g,b,c,r,col,night,cx,cy){
+  const kind=c.kind,lit=night&&(hsh(b.i,Math.floor(r/2),col+11)%4===0);
+  let wx=cx+4,wy=cy+3,ww=12,wh=9;
+  const glass=lit?'#e4be7e':c.glass,lower=lit?'#ac8050':c.glass2;
+  if(kind==='glass'){wx=cx+2;wy=cy+2;ww=16;wh=12;}
+  if(kind==='civic'||kind==='stone'){wx=cx+6;ww=8;wy=cy+3;wh=10;}
+  if(kind==='villa'){wx=cx+5;ww=10;wy=cy+4;wh=8;}
+  if(kind==='shop'&&r===0){wx=cx+3;ww=14;wy=cy+5;wh=9;}
+  px(g,wx-1,wy-1,ww+2,wh+2,c.wall2);
+  px(g,wx,wy,ww,wh,glass);px(g,wx,wy+wh-3,ww,3,lower);
+  px(g,wx,wy,ww,1,lit?'#f0d6a2':c.glint);
+  if(kind==='glass'){
+    // 유리 외벽은 세로 멀리언과 어긋난 반사 띠, 밤에는 꺼진 유리 면을 넓게 둔다.
+    px(g,cx+CELL_W-2,cy+1,1,FLOOR-2,c.wall3);
+    px(g,wx+7,wy,1,wh,c.wall2);
+    if(!night&&!lit){for(let j=0;j<5;j++)px(g,wx+2+j,wy+j+1,2,1,c.glint);}
+    if(lit)px(g,wx+3,wy+5,6,1,'#d2a36a');
+  }else{
+    px(g,wx+Math.floor(ww/2),wy,1,wh,c.trim);
+    if(kind!=='stone'&&kind!=='civic')px(g,wx,wy+4,ww,1,c.wall2);
+    px(g,wx-1,wy+wh,ww+2,1,c.trim);px(g,wx-1,wy+wh+1,ww+2,1,c.wall2);
+    if(!night&&kind!=='shop'){px(g,wx+1,wy+1,2,1,c.glint);}
+    if(kind==='stone'||kind==='civic'){
+      px(g,cx+2,cy+1,2,FLOOR-2,c.wall3);px(g,cx+CELL_W-4,cy+1,1,FLOOR-2,c.wall2);
+      px(g,wx-1,wy-2,ww+2,1,c.trim);
+      if(kind==='civic'){px(g,wx,wy,1,1,c.wall);px(g,wx+ww-1,wy,1,1,c.wall);}
+    }
+    if(kind==='brick'){
+      px(g,wx-1,wy-2,ww+2,1,c.wall3);px(g,wx-2,wy-1,2,2,c.wall3);px(g,wx+ww,wy-1,2,2,c.wall3);
+      px(g,wx,wy,1,1,c.wall2);px(g,wx+ww-1,wy,1,1,c.wall2);
+    }
+    if(kind==='home'||kind==='balcony'){
+      const balcony=r>0&&(kind==='balcony'||(col+b.i)%2===0);
+      if(balcony){
+        px(g,cx+2,cy+11,16,1,c.wall2);px(g,cx+2,cy+14,16,1,c.trim);
+        for(let j=0;j<5;j++)px(g,cx+3+j*3,cy+12,1,2,c.wall3);
+        px(g,cx+2,cy+15,16,1,c.wall2);
+      }else if((r+b.i)%3===1){px(g,cx+2,cy+2,1,11,c.accent);}
+    }
+    if(kind==='medical'){px(g,cx+1,cy+2,2,FLOOR-3,c.accent);px(g,cx+4,cy+FLOOR-2,12,1,c.trim);}
+    if(kind==='villa'){
+      px(g,wx-3,wy,2,wh,c.accent);px(g,wx+ww+1,wy,2,wh,c.accent);
+      for(let j=1;j<wh;j+=3){px(g,wx-3,wy+j,2,1,c.wall2);px(g,wx+ww+1,wy+j,2,1,c.wall2);}
+    }
+    if(kind==='shop'&&r===0){
+      px(g,cx+1,cy+1,18,3,c.accent);px(g,cx+1,cy+1,18,1,c.trim);
+      for(let j=0;j<6;j++)px(g,cx+1+j*3,cy+4,2,1,c.accent);
+      px(g,wx+2,wy+wh-3,3,2,'#c7a775');px(g,wx+8,wy+wh-2,3,1,c.trim);
+    }
+  }
+}
 function wallCell(g,b,c,r,col,cell,night,hk){
   const cx=b.x+col*CELL_W, cy=GROUND-(r+1)*FLOOR; const hole=cell.hp<=0; const cut=cell.cut||0; const edgeL=col===0, edgeR=col===b.cols-1;
   const openL=hole&&(cut&2)&&edgeL, openR=hole&&(cut&2)&&edgeR; const ow=openW(b,r,col);
@@ -168,8 +250,13 @@ function wallCell(g,b,c,r,col,cell,night,hk){
     if(openR){ px(g,cx+CELL_W-ow,cy+FLOOR-2,2,2,c.wall2); px(g,cx+CELL_W-ow+2,cy+FLOOR-1,1,1,c.wall2); if(!(cut&8)) px(g,cx+CELL_W-1,cy,1,1,c.wall2); px(g,cx+CELL_W-ow+2,cy+FLOOR-2,ow-2,2,c.wall2); }
     else if(!holeR){ px(g,cx+CELL_W-2,cy+1,2,FLOOR-3,c.wall); }
   }
-  /* 벽돌 질감: 드문드문 어두운 점 */
-  if(!hk) for(let i=0;i<4;i++){ const h=hsh(b.i*7+r,col*3+i,2); const bx=cx+(h%(CELL_W-2))+1, by=cy+2+((h>>5)%(FLOOR-5)); if(hole&&bx>cx+1&&bx<cx+CELL_W-2) continue; g.save(); g.globalAlpha=0.28; px(g,bx,by,2,1,c.wall2); g.restore(); }
+  /* 벽돌은 짧은 줄눈, 나머지는 조용한 면. 구멍 안에는 장식을 그리지 않는다. */
+  if(!hk&&!hole){
+    px(g,cx+CELL_W-3,cy+1,2,FLOOR-2,c.wall2);
+    if(c.kind==='brick'||c.kind==='shop')for(let yy=3;yy<FLOOR-1;yy+=4){
+      px(g,cx+1,cy+yy,2,1,c.wall2);px(g,cx+CELL_W-4,cy+yy,2,1,c.wall3);
+    }
+  }
   /* 층 선반(밝은 윗선)·바닥판(어두운 아랫선) */
   const lx=openL?cx+ow:cx, rx=openR?cx+CELL_W-ow:cx+CELL_W;
   if(!hole||!(cut&8)) px(g,lx,cy,rx-lx,1,c.wall3);
@@ -178,14 +265,12 @@ function wallCell(g,b,c,r,col,cell,night,hk){
   if(edgeL&&!openL) px(g,cx,cy,1,FLOOR,c.wall3); if(edgeR&&!openR) px(g,cx+CELL_W-1,cy,1,FLOOR,c.wall2);
   if(hole) return;
   if(hk){ hanokCell(g,b,c,r,col,cell,night,cx,cy,edgeL,edgeR); return; }
+  if(cell.hp>=3){facadeCell(g,b,c,r,col,night,cx,cy);return;}
   /* 창: 틀·유리·중간살·창턱 */
   const wx=cx+4, wy=cy+3, ww=12, wh=9;
   px(g,wx-1,wy-1,ww+2,wh+2,c.trim); px(g,wx+ww,wy-1,1,wh+2,c.wall2);
-  const lit=night&&(hsh(b.i,r,col+11)%3===0);
-  if(cell.hp>=3){ if(lit){ px(g,wx,wy,ww,wh,GL.lit); px(g,wx,wy+5,ww,wh-5,GL.lit2); } else { px(g,wx,wy,ww,wh,GL.a); px(g,wx,wy,ww,2,GL.hi); px(g,wx,wy+5,ww,wh-5,GL.b); px(g,wx+1,wy+1,1,1,'#fff'); }
-    px(g,wx+5,wy,2,wh,c.trim); px(g,wx,wy+4,ww,1,c.trim); }
-  else if(cell.hp>=1.5){ /* 금 간 유리: 한 귀퉁이가 빠지고 흰 금이 번진다 */
-    px(g,wx,wy,ww,wh,GL.a); px(g,wx,wy+5,ww,wh-5,GL.b); px(g,wx+5,wy,2,wh,c.trim); px(g,wx,wy+4,ww,1,c.trim);
+  if(cell.hp>=1.5){ /* 금 간 유리: 한 귀퉁이가 빠지고 흰 금이 번진다 */
+    px(g,wx,wy,ww,wh,c.glass); px(g,wx,wy+5,ww,wh-5,c.glass2); px(g,wx+5,wy,2,wh,c.trim); px(g,wx,wy+4,ww,1,c.trim);
     px(g,wx+7,wy,5,3,GL.dark); px(g,wx+6,wy+3,1,1,'#fff'); px(g,wx+5,wy+4,1,1,'#fff'); px(g,wx+4,wy+5,1,1,'#fff'); px(g,wx+2,wy+6,2,1,'#fff'); px(g,wx+8,wy+3,1,1,'#fff'); px(g,wx+9,wy+4,1,2,'#fff'); px(g,wx+3,wy+2,1,1,'#fff'); px(g,wx+2,wy+1,1,1,'#fff'); }
   else { /* 유리 없음·틀 부서짐: 안이 어둡고 틀 한쪽이 떨어져 나가고 벽돌이 이가 빠졌다 */
     px(g,wx,wy,ww,wh,GL.inner); px(g,wx,wy+6,ww,1,GL.inner2); px(g,wx+2,wy+1,3,1,GL.inner2);
@@ -241,6 +326,20 @@ function building(g,S,b,t,night){
   for(let r=0;r<b.floors;r++) for(let col=0;col<b.cols;col++) wallCell(g,b,c,r,col,b.cells[r][col],night,hk);
   if(warn){ cracks(g,b,top,warn); }
   /* 1층 가운데 문 */ const dx=b.x+Math.floor(b.w/2)-3; if(b.cells[0].every(cl=>cl.hp>0)){ if(hk){ /* 한옥 두 짝 띠살문과 돌 디딤 */ px(g,dx-1,GROUND-13,9,11,c.trim); px(g,dx,GROUND-12,3,10,HJ.day); px(g,dx+4,GROUND-12,3,10,HJ.day); for(let y=GROUND-11;y<GROUND-2;y+=2) { px(g,dx,y,3,1,HJ.lat); px(g,dx+4,y,3,1,HJ.lat); } px(g,dx-2,GROUND-2,11,2,'#b9ad98'); } else { px(g,dx,GROUND-12,7,12,c.trim); px(g,dx+1,GROUND-11,5,11,c.door); px(g,dx+2,GROUND-10,3,3,GL.a); px(g,dx+4,GROUND-6,1,1,c.trim); } }
+  if(!hk&&b.cells[0].every(cl=>cl.hp>=3)){
+    // 전용 출입구: 손상되면 지우므로 문·차양이 뚫린 벽을 다시 메우지 않는다.
+    const ex=b.x+Math.floor(b.w/2)-4;
+    px(g,ex-1,GROUND-12,11,12,c.wall2);px(g,ex,GROUND-11,9,10,c.door);
+    px(g,ex+1,GROUND-10,3,7,c.glass);px(g,ex+5,GROUND-10,3,7,c.glass2);
+    px(g,ex+4,GROUND-11,1,10,c.trim);px(g,ex+3,GROUND-5,1,1,c.trim);
+    px(g,ex-2,GROUND-2,13,1,c.trim);px(g,ex-3,GROUND-1,15,1,c.wall2);
+    const canopy=c.kind==='civic'||c.kind==='stone'?c.trim:c.accent;
+    px(g,ex-2,GROUND-14,13,2,canopy);px(g,ex-2,GROUND-14,13,1,c.wall3);
+    if(b.cols>1&&c.kind!=='glass'){
+      px(g,ex-7,GROUND-3,3,3,c.accent);px(g,ex-8,GROUND-6,5,3,night?'#466454':'#597960');
+      px(g,ex-7,GROUND-7,3,2,night?'#668374':'#8da37a');
+    }
+  }
   if(hk){ /* 광고판: 맨 위층 처마 밑 가운데에 트램 옆구리와 같은 광고판(SP.adPanel 10×5, 세 가지 돌아가며) */ const tr=b.floors-1, tc=Math.min(b.cols-1,Math.floor(b.cols/2)); if(b.cells[tr][tc].hp>0&&(b.cols===1||b.cells[tr][Math.max(0,Math.ceil(b.cols/2)-1)].hp>0)){ SP.adPanel(g,b.x+Math.floor(b.w/2)-5,top+4,b.i%3); } }
   /* 옥상: 난간 위에 동네 양식(Cc.roof)의 지붕 장식. 몬스터가 서는 높이(top) 위 10px 안에 둔다 */
   px(g,b.x-1,top-2,b.w+2,3,c.roof); px(g,b.x-1,top-2,b.w+2,1,c.roof2); px(g,b.x,top+1,b.w,1,c.wall2);
@@ -270,7 +369,7 @@ function render(g,S,t){
   const h=S.hero; if(h.state!=='climb'&&h.state!=='ride'){ g.fillStyle='rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(h.x,(h.state==='roof'?h.y:GROUND)-1,11,2,0,0,Math.PI*2); g.fill(); }
   SP.drawMonster(g,E.form(S),h,t,h.x,h.y);
   for(const s of S.shots) SP.shot(g,s);
-  for(const x of S.fx){ if(x.k==='quake') continue; if(x.k==='chunk'){ const c=palOf(S,x.n||0); x.wall=(x.sz===3)?c.wall:c.wall2; } SP.fx(g,x); }
+  for(const x of S.fx){ if(x.k==='quake') continue; if(x.k==='chunk'){ const c=palOf(S,x.n||0); SP.fx(g,{...x,wall:(x.sz===3)?c.wall:c.wall2}); }else SP.fx(g,x); }
   g.restore();
   if(S.flashT>0){ g.fillStyle=`rgba(255,250,230,${S.flashT>=3?0.45:0.2})`; g.fillRect(0,0,W,H); }
   hud(g,S,t);
