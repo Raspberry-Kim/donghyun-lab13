@@ -2,9 +2,9 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it using the metadata below."
 title: "Donghyunram (동현램): a single-player city-smashing laboratory in the manner of Rampage, with the monster, starting city and lives set through the esoteric language Donghyun-lang"
 type: software
-version: "0.28"
+version: "0.50"
 doi: "10.5281/zenodo.24068304"
-date-released: "2026-11-15"
+date-released: "2026-11-18"
 authors:
   - family-names: Kim
     given-names: Dong Hyun
@@ -23,8 +23,7 @@ abstract: >-
   single-player; the six monsters (Shushu, Lion, Tailcopter, Doomguy,
   Podong and Fruit fly, all characters of the Donghyun series) differ in
   strength, toughness, reach, walking speed and fall speed (the fruit fly
-  can flap to stay airborne); they share one simple body template (only
-  Podong is plump) and show their faces when climbing. A building cracks
+  can flap to stay airborne); they share one narrow-shouldered climbing body template and show their faces when climbing. A building cracks
   and shakes for about 1.7 seconds before it collapses, so the monster can
   jump off; a two-car tram runs along the street among the vehicles.
   Stamina drains far more slowly and eating
