@@ -21,6 +21,7 @@ function tailRotor(g,h,t,hit,dx,ox,oy,drawBody,face=1){
   }
   if(hit){g.save();g.globalAlpha*=.55;stroke([1.3,1,.75,.55].map(z=>tip(a-z)),'#8c937f',1);stroke([.43,.3,.15].map(z=>tip(a-z)),'#d8c59d',2);g.restore();}
   feather(a+Math.PI,.65);
-  if(Math.sin(a)<-.2||hit&&dy>0){feather(a,1);drawBody();}else{drawBody();feather(a,1);}
+  feather(a,1);
   g.fillStyle='#927859';g.fillRect(root[0]-1,root[1]-1,3,2);g.fillStyle='#f9e6bd';g.fillRect(root[0],root[1]-1,1,1);
+  drawBody(); // Both blades and the hub pass behind the face, including on a downward strike.
 }
