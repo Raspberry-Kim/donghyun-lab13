@@ -21,7 +21,7 @@ const FAMILIES=[
 ];
 
 const origins=['동현파','동현파','동현콥','동현둠','동현크','동현초'];
-const originalLook=['동현파의 치마와 운동화, 권투 글러브를 그대로 살린 복서다.','동현파의 긴 분홍 선충에 팔 한 쌍만 붙였다.','동현콥에서 크림색 꼬리를 회전날개로 쓰던 모습이다.','동현둠의 철모에 넓은 흉갑과 두꺼운 군화를 새로 그렸다.','동현크에서처럼 네 발로 서고 앞발을 뻗는다.','동현초의 주황색 몸에 가느다란 다리 세 쌍과 반투명 날개가 달렸다.'];
+const originalLook=['동현파의 치마와 운동화, 권투 글러브를 그대로 살린 복서다.','동현파의 긴 분홍 선충에 팔 한 쌍만 붙였다.','동현콥의 크림색 꼬리가 회전하며 창을 친다. 팔을 쓰지 않는다.','동현둠의 철모에 넓은 흉갑과 두꺼운 군화를 새로 그렸다.','동현크에서처럼 네 발로 서고 앞발을 뻗는다. 벽에서는 배를 벽면으로 돌린다.','동현초의 몸을 머리가 위로 오게 세운다. 앞다리로 치고 세 쌍의 다리로 벽을 짚는다.'];
 const FORMS=FAMILIES.flatMap((f,i)=>['origin','monster'].map((look,j)=>({...f,id:2*i+j+1,look,name:`${f.name}(${j?'몬스터':origins[i]})`,desc:(j?'원작 Rampage에 바치는 오마주로, 동현램의 등반형 몸체를 도트 픽셀로 직접 그렸다. ':originalLook[i]+' ')+f.desc.replace('기본 몬스터. ','')})));
 
 /* 도시: plan은 건물 폭(칸 수 1·2·3, 칸 20px)을 왼쪽부터 차례로 적은 것. 건물 수가 아니라 폭·높이·지붕 모양(roof)·배경(bg)으로 동네를 구별한다.
@@ -111,6 +111,9 @@ function hitCell(S,b,r,c,atk,how){
   let got=0;
   if(cell.person){ cell.person=0; S.score+=SCORE.person; eat(S,SCORE.person,20,'사람','person'); S.events.push({t:'eat',what:'person',kind:S.hero.eatKind}); got=1; }
   const cx=b.x+c*CELL_W+CELL_W/2, cy=GROUND-r*FLOOR-FLOOR/2;
+  const h=S.hero,f=form(S);
+  if(h.punchT===11&&f.key==='copter'&&f.look==='origin'&&!h.rotorContact&&
+     (cell.hp>0||(cutBits(how,c,b)&~(cell.cut||0))))h.rotorContact={x:cx,y:cy};
   if(cell.hp<=0){ /* 이미 뚫린 칸을 다시 치면 더 깎인다 */ const add=cutBits(how,c,b)&~(cell.cut||0); if(add){ cell.cut=(cell.cut||0)|add; debris(S,cx,cy,b.i,3,'chunk'); addFx(S,'dust',cx,cy,0); S.events.push({t:'hit'}); return 1; } return got; }
   cell.hp-=atk; S.score+=SCORE.punch; S.events.push({t:'hit'}); addFx(S,'dust',cx,cy,0);
   debris(S,cx,cy,b.i,cell.hp<=0?6:3,'glass'); debris(S,cx,cy,b.i,cell.hp<=0?5:2,'chunk');
@@ -215,6 +218,7 @@ function step(S,k){
   }
   /* 주먹: 방향키를 누른 채 치면 그쪽(위·아래·옆)을 친다 */
   if(k.punchPressed&&h.punchT<=0&&(h.state==='ground'||h.state==='climb'||h.state==='roof')){ h.punchT=16; const dx=k.left?-1:k.right?1:0, dy=k.up?-1:k.down?1:0; if(dx) h.dir=dx; h.pdx=h.dir; h.pdy=dy; S.events.push({t:'punch'}); }
+  if(h.punchT===16&&h.rotorContact)delete h.rotorContact;
   if(h.punchT===11) punch(S);
   stepWorld(S); checkClear(S);
 }

@@ -346,8 +346,9 @@ canvas.addEventListener('pointerup',e=>{
   const h=S.hero, hb=E.heroBox(h);
   if(E.form(S).look==='origin'&&!h.shrinkT){
     // 긴 선충·철모·양 갈래 머리도 직접 찍을 수 있게 한다. 전투 피격 범위는 바꾸지 않는다.
-    const heights={shushu:45,lion:47,copter:36,doom:51,podong:23,fly:33};
+    const heights={shushu:50,lion:49,copter:36,doom:55,podong:24,fly:41};
     hb.h=Math.max(hb.h,heights[E.form(S).key]);hb.y=h.y-hb.h;
+    if(h.state==='climb'||h.state==='ride'){hb.x+=h.side*10;hb.w+=8;hb.x-=4;}
   }
   if(pr.x>=hb.x-6&&pr.x<=hb.x+hb.w+6&&pr.y>=hb.y-6&&pr.y<=hb.y+hb.h+6){ /* 몬스터 자신: 주먹 */ keys.punchPressed=true; target=null; return; }
   if(pr.y>=E.GROUND+2){ pr.y=E.GROUND-4; }
