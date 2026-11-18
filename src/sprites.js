@@ -371,7 +371,41 @@ function originBody(g,key,P,h,t){
   }
   g.restore();
 }
+// In wall-local coordinates: mouth centre and the joint below which every support pixel stays put.
+const mealJoint={shushu:[-10,-20,-10],podong:[-10,-15,-10],lion:[-8,-13,-5],fly:[-20,-35,-20],doom:[-19,-42,-18],copter:[-11,-12,-7]};
+function wallMeal(g,f,h,t,x,y){
+  const origin=f.look==='origin',face=-(h.side||-1),[mx,my,joint]=mealJoint[f.key],cut=origin?joint:-7;
+  const held={...h,eatT:0,punchT:0,hurtT:0,wallContact:null,rotorContact:null};
+  g.save();g.translate(Math.round(x),Math.round(y));g.imageSmoothingEnabled=false;
+  const clip=(y1,y2)=>{g.beginPath();g.rect(-160,y1,320,y2-y1);g.clip();};
+  g.save();clip(cut,100);rawMonster(g,f,held,t,0,0);g.restore();
+  g.save();clip(-180,cut);
+  // The older bodies already animate the hands, food and face together. Do not scale their feet.
+  if(!origin){rawMonster(g,f,{...h,state:'climb'},t,0,0);}
+  else{
+    const p=poseOf({...h,state:'climb'},t,f);
+    const sy=Math.max(.70,(p.sy||1)+(p.head||0)/(my-cut)),sx=p.sx||1;
+    const lean=(p.lean||0)/(my-cut),worldX=mx*face;
+    // Pivot at the neck/waist instead of the floor: the head can still duck, stretch and lean.
+    g.transform(sx,0,lean*face,sy,worldX*(1-sx)-lean*face*cut,cut*(1-sy));
+    rawMonster(g,f,held,t,0,0);g.scale(face,1);
+    const bob=f.key==='copter'?-((t>>2)&1):0;
+    const yM=my+bob,w=f.key==='lion'?3:5,m=Math.round(p.mouth*5*(p.mouthBoost||1));
+    if(p.eyes==='wide'||p.eyes==='closed'||p.eyes==='happy'||p.eyes==='half'){
+      for(const sign of [-1,1]){const ex=mx+sign*2-1;px(g,ex,yM-4,2,p.eyes==='wide'?2:1,p.eyes==='wide'?C.eye:C.line);if(p.eyes==='wide')px(g,ex+1,yM-4,1,1,C.pupil);}
+    }
+    if(m){rrect(g,mx-(w>>1),yM-1,w,m,C.mouth,C.line);if(m>3){px(g,mx-(w>>1),yM-1,w,1,C.teeth);px(g,mx-1,yM+m-3,2,2,C.tongue);}}
+    g.translate(mx-8,yM-p.my);items(g,p,t);
+  }
+  g.restore();g.restore();
+}
 function drawMonster(g,form,h,t,x,y){
+  const human=!h.eatWhat||h.eatWhat==='person'||h.eatWhat==='soldier';
+  const contact=form.look==='origin'&&((h.wallContact&&h.punchT>=9&&h.punchT<=11)||(form.key==='copter'&&h.punchT===11&&h.rotorContact));
+  if(h.eatT>0&&!h.shrinkT&&human&&!contact&&(h.state==='climb'||h.state==='ride'))return wallMeal(g,form,h,t,x,y);
+  rawMonster(g,form,h,t,x,y);
+}
+function rawMonster(g,form,h,t,x,y){
   if(form.look==='legacy')return RamLegacy.drawMonster(g,form,h,t,x,y);
   g.save(); g.translate(Math.round(x),Math.round(y));
   if(h.shrinkT>0){ if(h.dir<0) g.scale(-1,1); if(h.shrinkT>96&&((t>>1)&1)){ g.globalAlpha=0.5; } shrunk(g,h,t); g.restore(); return; }

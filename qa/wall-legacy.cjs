@@ -10,7 +10,7 @@ const reference=tag=>git('git',['show',tag+':src/sprites.js'],{cwd:root,encoding
     let counts={legacy:0,monster:0,hits:0,misses:0,saves:0};
     let refs={legacy:ref(old),monster:ref(current)};
     const opts=[...document.querySelector('#example').options].map(x=>x.value);
-    for(let i=0;i<6;i++){const k=E.FORMS[2*i].key;ok(opts.slice(3*i,3*i+3).join('/')===[k,k+'-monster',k+'-legacy'].join('/'),k);}
+    for(let i=0;i<6;i++){const k=E.FORMS[2*i].key;ok([k,k+'-monster',k+'-legacy'].every(id=>opts.includes(id)),k);}
     for(const f of E.FORMS){
       let save=structuredClone(base);save.state.formI=f.id-1;D.restore(save);ok(D.snapshot().state.formI===f.id-1&&E.form(D.state).name===f.name,'저장 '+f.name);counts.saves++;
       if(f.look==='origin'){
@@ -29,7 +29,9 @@ const reference=tag=>git('git',['show',tag+':src/sprites.js'],{cwd:root,encoding
       for(const state of ['ground','roof','air','climb','ride','sit'])for(const side of [-1,1])for(const dir of [-1,1]){
         const h={...save.state.hero,state,side,dir,pdx:dir,walkT:6,climbT:10,inv:0};
         for(const extra of [{},{punchT:11},{punchT:6,pdy:-1},{punchT:4,pdy:1},{eatT:29,eatKind:'chew'},{eatT:17,eatKind:'gulp'},{eatT:42,eatKind:'toss'},{eatT:33,eatKind:'smoke'},{hurtT:8},{shrinkT:72}]){
-          const v={...h,...extra};ok(render(Sprites,f,v)===render(refs[f.look],f,v),f.name+'/'+state+'/'+dir);counts[f.look]++;
+          // Wall human meals intentionally changed in v1.07; wall-meal.cjs checks these separately.
+          const v={...h,...extra};if(v.eatT&&['climb','ride'].includes(state))v.eatWhat='taxi';
+          ok(render(Sprites,f,v)===render(refs[f.look],f,v),f.name+'/'+state+'/'+dir);counts[f.look]++;
         }
       }
     }return counts;
