@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it using the metadata below."
 title: "Donghyunram (동현램): a single-player city-smashing laboratory in the manner of Rampage, with the monster, starting city and lives set through the esoteric language Donghyun-lang"
 type: software
-version: "1.03"
+version: "1.04"
 doi: "10.5281/zenodo.24068304"
 date-released: "2026-11-18"
 authors:
@@ -28,7 +28,7 @@ abstract: >-
   jump off; a two-car tram runs along the street among the vehicles.
   Stamina drains far more slowly and eating
   restores far more than in the original, so that long play near full
-  stamina is the norm; the four eating animations are exaggerated. The
+  stamina is the norm; the eating animations are exaggerated; the source-game appearances never smoke. The
   only settings, the appearance (1-18), the starting city (1-12) and the number
   of lives (1-9, 0 for unlimited), are chosen through a program written in
   the esoteric programming language Donghyun-lang. Input is keyboard,

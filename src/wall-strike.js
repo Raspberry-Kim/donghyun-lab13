@@ -3,19 +3,24 @@ function drawWallStrike(g,key,h,row){
   const im=document.getElementById('wall-sheet'),face=-(h.side||-1),n=16-h.punchT;
   const u=[0,-.08,-.17,-.11,.35,1,1,.99,.93,.74,.5,.27,.12,.04,0,0][n]||0;
   const inward=(h.pdx||h.dir)===face,c=h.wallContact;
-  const sh={shushu:[60,39],podong:[63,45],lion:[61,33],fly:[48,36],doom:[52,32]}[key];
+  const sh={shushu:[inward?60:54,39],podong:[inward?63:57,45],lion:[inward?61:57,33],fly:[inward?48:42,36],doom:[inward?52:42,32]}[key];
   const anchor=sh[1]+14,dy=h.pdy||0;
   g.save();g.scale(face,1);g.translate(-68,-anchor);
   const pose=Math.abs(u)<.13?0:u<.4?3:u<.8?1:2;
   const paired=['shushu','lion','doom'].includes(key);
   if(paired){
     const grip={shushu:[[57,39],[62,37],[65,32]],lion:[[58,33],[62,32],[67,28]],doom:[[44,32],[57,32],[66,20]]}[key];
+    if(!inward)grip[0]=[key==='doom'?54:key==='shushu'?60:61,grip[0][1]];
     wallArm(g,im,key,...grip);
   }
-  g.drawImage(im,96*pose,80*row,96,80,0,0,96,80);
+  if(!inward&&paired){
+    const pivot={shushu:58,lion:60,doom:48}[key],cut={shushu:43,lion:36,doom:37}[key];
+    g.drawImage(im,96*pose,80*row+cut,96,80-cut,0,cut,96,80-cut);
+    g.save();g.translate(2*pivot,0);g.scale(-1,1);g.drawImage(im,96*pose,80*row,96,cut,0,0,96,cut);g.restore();
+  }else g.drawImage(im,96*pose,80*row,96,80,0,0,96,80);
   const tx=68+(c?(c.x-h.x)*face:inward?9:-29);
   const ty=c?anchor+c.y-h.y:sh[1]+dy*16;
-  const sign=inward?1:-1,rest=[sh[0]+4,sh[1]-3];
+  const sign=inward?1:-1,rest=[sh[0]+4*sign,sh[1]-3];
   const end=[Math.round(rest[0]+u*(tx-rest[0])),Math.round(rest[1]+u*(ty-rest[1]))];
   const fold=key==='shushu'||key==='lion'?3:7;
   const e=[Math.round((sh[0]+end[0])/2-(1-Math.max(0,u))*fold*sign),Math.round((sh[1]+end[1])/2+fold*(1-Math.max(0,u)))];
