@@ -109,15 +109,26 @@ let target=null; /* 손가락·마우스로 찍은 자리 */
 function preview(c){ previewS=E.newGame({form:c.form,city:c.city,lives:c.lives===0?Infinity:c.lives,seed:1}); previewS.hero.x=E.W/2; $('#day').textContent=`도시 ${c.city} · ${CITIES[c.city-1].name}`; $('#tile-info').textContent=`${formOf(c).name}가 ${CITIES[c.city-1].name}에 나타난다. 건물 ${CITIES[c.city-1].nB}채를 모두 무너뜨리면 다음 도시로.`; fit(); }
 function fit(){
   if(!canvas.width) return;
+  const size=w=>{const width=w+'px';canvas.style.width=width;canvas.style.margin='0 auto';canvas.parentElement.style.setProperty('--board-width',width);};
   const full=document.getElementById('stage-full');
   if(full&&full.classList.contains('fs')){
     const side=full.classList.contains('side'), cs=getComputedStyle(full), h=el=>el&&el.offsetHeight||0;
     let aw=full.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight), ah=full.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom);
     if(side) aw-=2*190+20; else ah-=h(full.querySelector('.board-top'))+h(full.querySelector('.board-bottom'))+h(full.querySelector('.touchpad'))+30;
-    canvas.style.width=Math.max(120,Math.min(aw,ah*canvas.width/canvas.height))+'px'; canvas.style.margin='0 auto'; return; }
+    size(Math.max(120,Math.min(aw,ah*canvas.width/canvas.height))); return; }
   const st=canvas.parentElement, w=st.clientWidth; if(!w) return;
   const maxH=Math.max(240,innerHeight-230), byH=maxH*canvas.width/canvas.height;
-  canvas.style.width=Math.min(w,byH)+'px'; canvas.style.margin='0 auto';
+  size(Math.min(w,byH));
+}
+const ink=$('#board-ink'),inkParts=[...ink.querySelector('.ink-bar').children],inkMsg=ink.querySelector('.ink-msg');
+function boardInk(s){
+  const f=E.form(s),hp=Math.max(0,Math.min(1,s.hero.stam/E.MAX_STAM)),meter=inkParts[1].firstElementChild;
+  const write=(el,str)=>{if(el.textContent!==str)el.textContent=str;};
+  if(inkParts[0].textContent!==f.name){write(inkParts[0],f.name);ink.style.setProperty('--actor',f.color);}
+  if(meter.dataset.hp!==String(hp)){meter.dataset.hp=hp;meter.style.width=100*hp+'%';meter.style.backgroundColor=hp>.5?'#78c660':hp>.25?'#edc653':'#f86962';}
+  write(inkParts[2],String(s.score).padStart(7,'0'));write(inkParts[3],'목숨 '+(s.lives===Infinity?'∞':s.lives));
+  write(inkParts[4],s.city+'/'+CITIES.length+' '+E.cityOf(s).name);const msg=s.msgT>0?s.msg:'';write(inkMsg,msg||'');if(inkMsg.hidden===!!msg)inkMsg.hidden=!msg;
+  if(ink.hidden)ink.hidden=false;
 }
 let last=0, acc=0; const STEP=1000/60;
 function tick(){ let aimed=false;if(target){ E.autoKeys(S,target,keys);aimed=!!target.strike;if(target.done)target=null; } E.step(S,keys);if(aimed)keys.left=keys.right=keys.up=keys.down=false;keys.jumpPressed=false; keys.punchPressed=false; events(); }
@@ -129,7 +140,7 @@ function frame(now){
   } else { last=now; acc=0; }
   if(S&&S.status!=='play'&&$('#result-card').hidden){ if(mode==='over') resultCard(S.status==='win'); else if(mode==='clear') clearCard(); }
   const s=S||previewS;
-  if(s){ R.render(g,s,S?S.time:T); if(!S) previewOverlay(); if(S&&target&&!target.done) drawTarget(); if(S&&mode==='over'&&S.status==='win'&&(confettiT>0||confetti.length)) confettiFrame(); if(S&&paused&&menu) drawPauseDim(); }
+  if(s){ R.render(g,s,S?S.time:T);boardInk(s); if(!S) previewOverlay(); if(S&&target&&!target.done) drawTarget(); if(S&&mode==='over'&&S.status==='win'&&(confettiT>0||confetti.length)) confettiFrame(); if(S&&paused&&menu) drawPauseDim(); }
   requestAnimationFrame(frame);
 document.addEventListener('visibilitychange',()=>{ if(document.hidden&&S&&mode==='play'&&!menu) mainMenu(); /* 다른 탭을 보는 동안 멈추고, 돌아오면 멈춤 메뉴가 떠 있다 */ });
 }
