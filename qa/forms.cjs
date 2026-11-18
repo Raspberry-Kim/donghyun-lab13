@@ -31,7 +31,7 @@ const result=await p.evaluate(async reference=>{
     }
     if(m>=2)ok(seen.size>=4,f.name+' 타격 동작 부족');
    }
-   for(const [kind,total] of Object.entries({chew:48,gulp:36,toss:54,smoke:70})){
+   for(const [kind,total] of Object.entries({chew:48,gulp:36,toss:54})){
      const frames=new Set();for(let t=0;t<total;t+=3){
        g.clearRect(0,0,96,80);Sprites.drawMonster(g,f,{...s.state.hero,dir:1,eatT:total-t,eatKind:kind,eatWhat:'person'},t,38,61);frames.add(g.canvas.toDataURL());
      }ok(frames.size>=5,f.name+kind);eats++;

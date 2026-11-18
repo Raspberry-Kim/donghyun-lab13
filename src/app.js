@@ -120,7 +120,7 @@ function fit(){
   canvas.style.width=Math.min(w,byH)+'px'; canvas.style.margin='0 auto';
 }
 let last=0, acc=0; const STEP=1000/60;
-function tick(){ if(target){ E.autoKeys(S,target,keys); if(target.done) target=null; } E.step(S,keys); keys.jumpPressed=false; keys.punchPressed=false; events(); }
+function tick(){ let aimed=false;if(target){ E.autoKeys(S,target,keys);aimed=!!target.strike;if(target.done)target=null; } E.step(S,keys);if(aimed)keys.left=keys.right=keys.up=keys.down=false;keys.jumpPressed=false; keys.punchPressed=false; events(); }
 function frame(now){
   T++;
   if(S&&S.status==='play'&&!paused){
@@ -252,6 +252,7 @@ function restore(data){
   if(!Array.isArray(st.ens)||st.ens.some(e=>!EN[e.type])) throw new Error('적 정보가 맞지 않는다.');
   if(st.lives==='inf') st.lives=Infinity; else if(!(Number.isInteger(st.lives)&&st.lives>=1&&st.lives<=9)) throw new Error('목숨 정보가 맞지 않는다.');
   if(!st.hero||!(st.hero.x>=0&&st.hero.x<=E.W)||!(st.hero.stam>=0&&st.hero.stam<=E.MAX_STAM)) throw new Error('몬스터 위치가 맞지 않는다.');
+  if(FORMS[st.formI].look==='origin'&&st.hero.eatKind==='smoke'){st.hero.eatKind='gulp';st.hero.eatT=Math.ceil(Math.max(0,Math.min(70,st.hero.eatT||0))*36/70);}
   if(st.status!=='play') throw new Error('이미 끝난 판이다.');
   st.events=[]; st.shots=st.shots||[]; st.fx=st.fx||[]; st.msgT=0; st.rs=st.rs|0;
   closeMenu(); $('#result-card').hidden=true;
@@ -332,18 +333,19 @@ document.querySelectorAll('#touchpad [data-key]').forEach(b=>{
 addEventListener('blur',()=>{ resetKeys(); });
 
 /* ---------- 화면을 직접 찍기(마우스·손가락): 몬스터를 찍으면 주먹, 다른 곳을 찍으면 그리로 간다(건물 위쪽이면 올라간다), 위로 튕기면 점프 ---------- */
-let press=null;
+let press=null,lastTouchEnd=-Infinity;
 function boardPos(e){ const r=canvas.getBoundingClientRect(); return {x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height}; }
-canvas.addEventListener('pointerdown',e=>{
-  if(!S) return; e.preventDefault(); canvas.setPointerCapture(e.pointerId);
+function boardDown(e,id){
+  if(!S||press) return; e.preventDefault(); if(e.pointerId!=null)canvas.setPointerCapture(e.pointerId);
   if(mode==='over'){ backToSetup(); return; } if(mode==='clear'){ nextCity(); return; } if(menu) return;
-  const p=boardPos(e); press={x:p.x,y:p.y,t:performance.now(),id:e.pointerId};
-});
-canvas.addEventListener('pointerup',e=>{
-  if(!S||!press||press.id!==e.pointerId) return; e.preventDefault(); const p=boardPos(e), dt=performance.now()-press.t, dy=p.y-press.y, dx=p.x-press.x; const pr=press; press=null;
+  const p=boardPos(e); press={x:p.x,y:p.y,t:performance.now(),id};
+}
+function boardUp(e,id){
+  if(!S||!press||press.id!==id) return; e.preventDefault(); const p=boardPos(e), dt=performance.now()-press.t, dy=p.y-press.y, dx=p.x-press.x; const pr=press; press=null;
   if(menu||mode!=='play') return;
   if(dt<400&&dy<-24&&Math.abs(dx)<Math.abs(dy)*1.5){ /* 위로 튕김: 점프(꼬리콥터는 공중에서 좌우 방향도) */ keys.jumpPressed=true; if(S.hero.hang>1.5&&Math.abs(dx)>10) target={x:p.x,y:p.y}; return; }
   const h=S.hero, hb=E.heroBox(h);
+  if(E.alleyAim(S,pr)){target={x:pr.x,y:pr.y};return;} // The neighboring facade wins over the expanded character tap box.
   if(E.form(S).look==='origin'&&!h.shrinkT){
     // 긴 선충·철모·양 갈래 머리도 직접 찍을 수 있게 한다. 전투 피격 범위는 바꾸지 않는다.
     const heights={shushu:50,lion:49,copter:36,doom:55,podong:24,fly:41};
@@ -353,7 +355,18 @@ canvas.addEventListener('pointerup',e=>{
   if(pr.x>=hb.x-6&&pr.x<=hb.x+hb.w+6&&pr.y>=hb.y-6&&pr.y<=hb.y+hb.h+6){ /* 몬스터 자신: 주먹 */ keys.punchPressed=true; target=null; return; }
   if(pr.y>=E.GROUND+2){ pr.y=E.GROUND-4; }
   target={x:pr.x,y:pr.y}; h.dir=pr.x<h.x?-1:1;
-});
+}
+canvas.addEventListener('pointerdown',e=>boardDown(e,e.pointerId));
+canvas.addEventListener('pointerup',e=>{if(e.pointerType==='touch')lastTouchEnd=performance.now();boardUp(e,e.pointerId);});
+// A touch-capable Firefox can deliver mouse-only events for a physical mouse.
+canvas.addEventListener('mousedown',e=>{if(e.button===0&&performance.now()-lastTouchEnd>600)boardDown(e,'mouse');});
+canvas.addEventListener('mouseup',e=>boardUp(e,'mouse'));
+window.addEventListener('mouseup',()=>{if(press?.id==='mouse')press=null;});
+window.addEventListener('blur',()=>{press=null;});
+const touchPoint=(e,t)=>({clientX:t.clientX,clientY:t.clientY,preventDefault:()=>e.preventDefault()});
+canvas.addEventListener('touchstart',e=>{const t=e.changedTouches[0];if(t)boardDown(touchPoint(e,t),'touch'+t.identifier);},{passive:false});
+canvas.addEventListener('touchend',e=>{lastTouchEnd=performance.now();for(const t of e.changedTouches)boardUp(touchPoint(e,t),'touch'+t.identifier);},{passive:false});
+canvas.addEventListener('touchcancel',()=>{press=null;});
 canvas.addEventListener('pointercancel',()=>{ press=null; });
 $('#result-card').addEventListener('pointerdown',e=>{ if(e.target.tagName==='BUTTON') return; if(mode==='clear') nextCity(); else if(mode==='over') backToSetup(); });
 
