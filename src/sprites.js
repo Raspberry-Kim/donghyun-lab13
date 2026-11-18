@@ -313,18 +313,23 @@ function shrunk(g,h,t){ const k=h.shrinkT; const sc=k>90?1-(120-k)/30*0.6:0.4; i
 
 /* 몬스터 한 마리 그리기: form 객체, 상태 h, 시간 t, 발 기준 좌표 (x,y) */
 const originRow={shushu:0,podong:1,lion:2,fly:3,doom:4,copter:5};
-const originMouth={shushu:[2,-27],podong:[7,-10],lion:[0,-41],fly:[15,-17],doom:[0,-38],copter:[-1,-14]};
+const originMouth={shushu:[2,-27],podong:[7,-10],lion:[0,-41],fly:[0,-36],doom:[0,-38],copter:[0,-12]};
 function originBody(g,key,P,h,t){
-  const eat=h.eatT>0,wall=h.state==='climb'||h.state==='ride',hit=h.punchT>0&&h.punchT<14;
-  const n=eat?0:hit?1:wall||h.state==='air'?2:0,im=document.getElementById('origin-sheet'),[mx,my]=originMouth[key];
+  const eat=h.eatT>0&&!(key==='copter'&&h.punchT===11&&h.rotorContact),wall=h.state==='climb'||h.state==='ride',hit=!eat&&h.punchT>0;
+  const dx=(hit?h.pdx:0)||h.dir||1,dy=h.pdy||0,side=h.side||-1,walk=h.walkT||0;
+  const dogWall=key==='podong'&&wall&&!eat,climbing=wall&&!eat&&(!hit||dogWall);
+  const mode=eat?0:climbing?1:hit?(dy<0?4:dy>0?5:dx<0?2:3):walk?6:0;
+  const phase=hit&&!dogWall?Math.min(15,16-h.punchT):climbing?((h.climbT||0)>>1)&7:mode===6?(walk>>1)&7:0;
+  const im=document.getElementById('origin-sheet'),[mx,my]=originMouth[key];
   if(!im.complete||!im.naturalWidth)return;
-  const draw=(x,y,w,h,...dest)=>g.drawImage(im,84*n+x,70*originRow[key]+y,w,h,...dest);
-  const bob=h.walkT>0?Math.sin(h.walkT*.42):0,stride=Math.round(bob*2),rise=Math.round(Math.abs(bob)*2);
+  const draw=(x,y,w,h,...dest)=>g.drawImage(im,96*phase+x,80*(originRow[key]*7+mode)+y,w,h,...dest);
   g.save();g.imageSmoothingEnabled=false;
   if(eat){
-    const split=my+2+61;
-    draw(0,split,84,70-split,-38,split-61,84,70-split);
-    draw(0,0,84,split,-38+P.lean,-61+P.head,84,split);
+    if(dx<0)g.scale(-1,1);
+    const split=my+2+68;
+    const faceBody=()=>{draw(0,split,96,80-split,-48,split-68,96,80-split);
+      draw(0,0,96,split,-48+P.lean,-68+P.head,96,split);};
+    if(key==='copter')tailRotor(g,h,t,false,1,P.lean,P.head,faceBody);else faceBody();
     const x=mx+P.lean,y=my+P.head,w=key==='lion'?3:6,m=Math.round(P.mouth*6*(P.mouthBoost||1));
     if(P.eyes==='wide'){for(const s of [-1,1]){px(g,x+s*2-1,y-4,2,2,C.eye);px(g,x+s*2,y-4,1,1,C.pupil);}}
     else if(P.eyes==='closed'||P.eyes==='happy'||P.eyes==='half'){for(const s of [-1,1])px(g,x+s*2-1,y-3,2,1,C.line);}
@@ -332,18 +337,26 @@ function originBody(g,key,P,h,t){
     // 물건·하트·연기는 출신형의 입을 기준으로 옮긴다. 포물선과 박자는 v0.50 그대로.
     g.translate(mx-8,my-P.my);items(g,P,t);
   }else{
-    if(wall&&!hit&&h.side*h.dir>0)g.scale(-1,1);
-    if(hit&&h.pdy)g.rotate(h.pdy*.50);
     if(h.state==='sit')g.scale(1.08,.74);
     if(h.hurtT>0)g.rotate(-.12);
-    if(key==='copter'||key==='fly')g.translate(0,-((t>>(P.flap?1:2))&1));
-    else if(!wall&&!hit&&!stride&&h.state==='ground')g.scale(1,1+((t>>5)&1)*.018);
-    if(wall&&!hit)g.translate(0,-((h.climbT>>2)&1));
-    if(stride&&n===0){
-      const cut=52;draw(0,0,84,cut,-38,-61-rise,84,cut+rise);
-      draw(0,cut,38,70-cut,-38-stride,cut-61,38,70-cut);
-      draw(38,cut,46,70-cut,stride,cut-61-Math.max(0,stride),46,70-cut);
-    }else draw(0,0,84,70,-38,-61,84,70);
+    if(key==='copter'){
+      const ox=wall?side*11:0,oy=hit?0:-((t>>2)&1);
+      tailRotor(g,h,t,hit,dx,ox,oy,()=>draw(0,0,96,80,ox-48,oy-68,96,80));
+    }else{
+      if(hit&&wall&&!dogWall)g.translate(side*12,0);
+      const mirror=climbing?side>0:dx<0&&(!hit||dy!==0);
+      if(mirror)g.scale(-1,1);
+      if(key==='fly'&&!hit&&!wall)g.translate(0,-((t>>(P.flap?1:2))&1));
+      if(!hit&&!wall&&!walk&&key!=='fly'&&(t>>5&1))g.scale(1,1.018);
+      const stride=mode===6?Math.round(2*Math.sin(walk*.42)):0;
+      if(stride&&(key==='fly'||key==='lion')){g.translate(0,-Math.abs(stride));draw(0,0,96,80,-48,-68,96,80);}
+      else if(stride&&key!=='podong'){
+        const cut=56,rise=Math.abs(stride);draw(0,0,96,cut,-48,-68-rise,96,cut+rise);
+        draw(0,cut,48,24,-48-stride,cut-68,48,24);draw(48,cut,48,24,stride,cut-68-Math.max(0,stride),48,24);
+      }else draw(0,0,96,80,-48,-68,96,80);
+      if(dogWall&&hit){const q=Math.sin((16-h.punchT)*Math.PI/16),ux=dx*(mirror?-1:1);
+        limb(g,-3,-13,-3+ux*Math.round(3+3*q),-13+dy*Math.round(2+4*q),3,C.fur,C.line);}
+    }
     if(P.extra.length)items(g,P,t);
   }
   g.restore();
@@ -352,7 +365,7 @@ function drawMonster(g,form,h,t,x,y){
   g.save(); g.translate(Math.round(x),Math.round(y));
   if(h.shrinkT>0){ if(h.dir<0) g.scale(-1,1); if(h.shrinkT>96&&((t>>1)&1)){ g.globalAlpha=0.5; } shrunk(g,h,t); g.restore(); return; }
   if(h.hurtT>0&&((t>>1)&1)&&h.eatT<=0) g.globalAlpha=0.55;
-  const P=poseOf(h,t,form); if(!P.back&&h.dir<0) g.scale(-1,1); if(P.sx&&P.sy&&(P.sx!==1||P.sy!==1)) g.scale(P.sx,P.sy);
+  const P=poseOf(h,t,form); if(form.look!=='origin'&&!P.back&&h.dir<0) g.scale(-1,1); if(P.sx&&P.sy&&(P.sx!==1||P.sy!==1)) g.scale(P.sx,P.sy);
   const key=FACE[form.key]?form.key:'podong'; if(form.look==='origin')originBody(g,key,P,h,t);else body(g,P,t,key,h);
   g.restore();
 }

@@ -71,4 +71,15 @@ t('격파 폭발: 종류마다 꼭짓점 수가 다른 burst · 화면 흔들림
 t('v0.20 · 건물 폭 계획: 1·2·3칸이 섞이고 x 배치가 골목 24px·화면 안', ()=>{ for(let c=1;c<=12;c++){ const plan=E.CITIES[c-1].plan; assert.ok(plan.includes(1)&&plan.includes(2)&&plan.includes(3),c+' 세 폭이 다 있다'); for(let seed=1;seed<=5;seed++){ const S=E.newGame({form:9,seed,city:c}); assert.deepStrictEqual(S.builds.map(b=>b.cols),plan); for(let i=1;i<S.builds.length;i++) assert.strictEqual(S.builds[i].x-(S.builds[i-1].x+S.builds[i-1].w),E.GAP,'골목'); assert.ok(S.builds[S.builds.length-1].x+S.builds[S.builds.length-1].w<=E.W-8); const hs=new Set(S.builds.map(b=>b.floors)); assert.ok(hs.size>=2,'높이가 제각각 '+[...hs]); assert.ok(S.builds.every(b=>b.roofV>=0&&b.roofV<=3)); } } assert.ok(E.CITIES.every(c=>c.roof&&c.bg&&Array.isArray(c.tram)&&c.tram.length===3),'지붕·배경·트램 도색'); assert.strictEqual(new Set(E.CITIES.map(c=>c.tram[0])).size,12,'트램 색이 도시마다 다르다'); });
 t('v0.20 · 먹기: 무엇을 먹었는지 기억하고, 담배는 사람·군인일 때만 드물게(6%)', ()=>{ assert.strictEqual(E.SMOKE_P,0.06); let smokeH=0, nH=0, smokeV=0; for(let seed=1;seed<=400;seed++){ const S=E.newGame({form:9,seed}); const d=E.EN.taxi; S.hero.stam=10; E.killEn(S,{type:'taxi',x:S.hero.x,y:E.GROUND,hp:0,alive:true,dir:1}); assert.strictEqual(S.hero.eatWhat,'taxi'); assert.strictEqual(S.hero.eatCity,1); if(S.hero.eatKind==='smoke') smokeV++; assert.ok(['gulp','chew','toss','smoke'].includes(S.hero.eatKind)); const S2=E.newGame({form:9,seed}); E.killEn(S2,{type:'soldier',x:S2.hero.x,y:E.GROUND,hp:0,alive:true,dir:1}); assert.strictEqual(S2.hero.eatWhat,'soldier'); nH++; if(S2.hero.eatKind==='smoke') smokeH++; } assert.strictEqual(smokeV,0,'차를 먹고는 담배를 안 문다'); assert.ok(smokeH>=8&&smokeH<=50,'사람은 6%쯤: '+smokeH+'/'+nH); });
 t('v0.20 · 트램: 광고판 둘(0~2)과 도시 번호를 지닌다', ()=>{ for(let c=1;c<=12;c++){ const S=E.newGame({form:9,seed:c,city:c}); E.spawnTram(S); const tr=S.ens.find(e=>e.type==='tram'); assert.ok(tr.ad>=0&&tr.ad<=2&&tr.ad2>=0&&tr.ad2<=2); assert.strictEqual(tr.city,c); } });
+t('꼬리 회전: 실제 파편 칸과 접점 일치, 헛스윙에는 접점 없음, 몬스터판은 기록하지 않음',()=>{
+ for(const id of [5,6]){
+  const s=E.newGame({form:id,seed:322}),h=s.hero,b=s.builds[1];
+  Object.assign(h,{x:b.x,y:E.GROUND-2*E.FLOOR+3,bld:b.i,side:-1,dir:1,state:'climb'});
+  E.step(s,{punchPressed:true});for(let i=0;i<5;i++)E.step(s,{});
+  assert.equal(h.punchT,11);const dust=s.fx.find(p=>p.k==='dust');assert.ok(dust);
+  if(id===5)assert.deepEqual(h.rotorContact,{x:dust.x,y:dust.y});else assert.equal(h.rotorContact,undefined);
+  Object.assign(h,{x:0,y:E.GROUND,state:'ground',bld:-1,punchT:0,eatT:0,dir:-1});s.ens=[];s.stopT=0;
+  E.step(s,{punchPressed:true});for(let i=0;i<5;i++)E.step(s,{});assert.equal(h.rotorContact,undefined);
+ }
+});
 console.log(`\n${pass} 통과 · ${fail} 실패`); if(fail) process.exit(1);

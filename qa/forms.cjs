@@ -8,7 +8,7 @@ await p.click('#run');
 const result=await p.evaluate(async reference=>{
  const ok=(v,msg)=>{if(!v)throw Error(msg);},D=window.__donghyunram,forms=Engine.FORMS;
  const ref=new Image();ref.src='data:image/png;base64,'+reference;await ref.decode();
- const canvas=()=>{const c=document.createElement('canvas');c.width=84;c.height=70;return c.getContext('2d');};
+ const canvas=()=>{const c=document.createElement('canvas');c.width=96;c.height=80;return c.getContext('2d');};
  const g=canvas(),r=canvas(),start=D.snapshot();
  ok(start.state.formI===0&&start.version===2,'기본 출전');let poses=0,saves=0,eats=0;
  const rows=['shushu','podong','lion','fly','doom','copter'];
@@ -18,17 +18,22 @@ const result=await p.evaluate(async reference=>{
    const s=structuredClone(start);s.state.formI=i;D.restore(s);ok(D.snapshot().state.formI===i,'새 저장');saves++;
    if(i%2)continue;
    const old=structuredClone(start);old.version=1;old.state.formI=i/2;D.restore(old);ok(D.snapshot().state.formI===i+1&&old.state.formI===i/2,'구판 저장');saves++;
-   for(let n=0;n<3;n++){
-     const h={...s.state.hero,dir:1,punchT:n===1?8:0,state:n===2?'climb':'ground',side:-1};
-     g.clearRect(0,0,84,70);Sprites.drawMonster(g,f,h,0,38,61);
-     r.clearRect(0,0,84,70);r.drawImage(ref,n*84,rows.indexOf(f.key)*70,84,70,0,0,84,70);
-     const a=g.getImageData(0,0,84,70).data,c=r.getImageData(0,0,84,70).data;
-     const delta=a.findIndex((v,j)=>v!==c[j]);
-     ok(delta<0,`${f.name} 시안 ${n}: ${delta} (${a[delta]},${c[delta]})`);poses++;
+   for(let m=0;m<6;m++){
+    const seen=new Set();
+    for(let n=0;n<(m===0?1:m===1?8:16);n++){
+     const h={...s.state.hero,dir:m===2?-1:1,pdx:m===2?-1:1,pdy:m===4?-1:m===5?1:0,punchT:m>=2?16-n:0,state:m===1?'climb':'ground',side:-1,climbT:n*2};
+     g.clearRect(0,0,96,80);Sprites.drawMonster(g,f,h,0,48,68);
+     const a=g.getImageData(0,0,96,80).data;ok(a.some(v=>v),f.name+' 빈 그림');seen.add(g.canvas.toDataURL());
+     if(f.key!=='copter'){
+       r.clearRect(0,0,96,80);r.drawImage(ref,96*n,(rows.indexOf(f.key)*7+m)*80,96,80,0,0,96,80);
+       const c=r.getImageData(0,0,96,80).data;ok(a.every((v,j)=>v===c[j]),`${f.name} ${m}/${n}`);
+     }poses++;
+    }
+    if(m>=2)ok(seen.size>=4,f.name+' 타격 동작 부족');
    }
    for(const [kind,total] of Object.entries({chew:48,gulp:36,toss:54,smoke:70})){
      const frames=new Set();for(let t=0;t<total;t+=3){
-       g.clearRect(0,0,84,70);Sprites.drawMonster(g,f,{...s.state.hero,dir:1,eatT:total-t,eatKind:kind,eatWhat:'person'},t,38,61);frames.add(g.canvas.toDataURL());
+       g.clearRect(0,0,96,80);Sprites.drawMonster(g,f,{...s.state.hero,dir:1,eatT:total-t,eatKind:kind,eatWhat:'person'},t,38,61);frames.add(g.canvas.toDataURL());
      }ok(frames.size>=5,f.name+kind);eats++;
    }
  }
