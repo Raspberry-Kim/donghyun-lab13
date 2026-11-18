@@ -369,6 +369,7 @@ function render(g,S,t){
   for(const e of S.ens){ if(!e.alive) continue; if(e.type==='soldier') SP.soldier(g,e,t); else if(e.type==='tank') SP.tank(g,e,t); else if(e.type==='heli') SP.heli(g,e,t); else if(e.type==='tram') SP.tram(g,e,t); else SP.car(g,e,t); }
   const h=S.hero; if(h.state!=='climb'&&h.state!=='ride'){ g.fillStyle='rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(h.x,(h.state==='roof'?h.y:GROUND)-1,11,2,0,0,Math.PI*2); g.fill(); }
   SP.drawMonster(g,E.form(S),h,t,h.x,h.y);
+  if(E.form(S).look==='origin'&&h.wallContact&&h.punchT>0)wallImpact(g,h,palOf(S,h.wallContact.b));
   for(const s of S.shots) SP.shot(g,s);
   for(const x of S.fx){ if(x.k==='quake') continue; if(x.k==='chunk'){ const c=palOf(S,x.n||0); SP.fx(g,{...x,wall:(x.sz===3)?c.wall:c.wall2}); }else SP.fx(g,x); }
   g.restore();
