@@ -1,6 +1,6 @@
 /* 몸 중심에서 꼬리 쪽으로 3px 옮긴 회전축. 명중 순간엔 실제로 부서진 창의 좌표를 쓴다. */
-function tailRotor(g,h,t,hit,dx,ox,oy,drawBody){
-  const root=[ox-3,oy-22],n=16-h.punchT,a=hit?(n-5)*Math.PI/6:t*.60,dy=h.pdy||0;
+function tailRotor(g,h,t,hit,dx,ox,oy,drawBody,face=1){
+  const root=[ox-3*face,oy-22],n=16-h.punchT,a=hit?(n-5)*Math.PI/6:t*.60,dy=h.pdy||0;
   const contact=hit&&n>=5&&n<12&&h.rotorContact;
   let vx=hit?(dy?(dy>0?-12:4)*dx:30*dx):14,vy=hit?(dy?24*dy:-2):0;
   if(contact){vx=contact.x-h.x-root[0];vy=contact.y-h.y-root[1];}

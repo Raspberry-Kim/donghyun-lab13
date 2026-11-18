@@ -23,7 +23,7 @@ $('.brand').onclick=e=>{e.preventDefault();document.querySelector('[data-tab=pla
 
 /* ---------- 규칙 탭 표 ---------- */
 const pct=v=>Math.round(v*100)+'%';
-$('#form-grid').innerHTML=FORMS.map(f=>`<article><h4>${f.id} · ${f.name}<small>${f.from}</small></h4><p>${f.desc}</p><p class="stat">힘 ${pct(f.atk)} · 맷집 ${pct(f.def)} · 걸음 ${pct(f.speed)}${f.reach>1?' · 손 길이 2배':''}${f.hang>1?` · 낙하 1/${Math.round(f.hang)}`:''}${f.fly?' · 공중에서 Z로 날갯짓':''}</p></article>`).join('');
+$('#form-grid').innerHTML=orderedForms.map(f=>`<article><h4>${f.id} · ${f.name}<small>${f.from}</small></h4><p>${f.desc}</p><p class="stat">힘 ${pct(f.atk)} · 맷집 ${pct(f.def)} · 걸음 ${pct(f.speed)}${f.reach>1?' · 손 길이 2배':''}${f.hang>1?` · 낙하 1/${Math.round(f.hang)}`:''}${f.fly?' · 공중에서 Z로 날갯짓':''}</p></article>`).join('');
 $('#enemy-table').innerHTML='<thead><tr><th>적</th><th>먹기</th><th>체력 회복</th><th>공격</th><th>점수</th><th>습성</th></tr></thead><tbody>'+[
  ['soldier','길에서 주먹','총알 1','몬스터를 따라다니며 총을 쏜다. 길에서 한 대 치면 잡아먹는다. 무너지는 건물 아래 있으면 깔린다'],
  ['cop','길에서 주먹 두 번','없음','길을 지나간다. 두 번 치면 멈추고 잡아먹는다(슈슈·둠가이는 한 번)'],
@@ -97,7 +97,7 @@ function sortie(){
   catch(e){ result(`동현랭 오류${e.line?` (${e.line}줄)`:''}: ${e.message}`,'error'); status('동현랭 오류','error'); return; }
   const p=parseSortie(out);
   if(p.err.length){ result('출전 규약 오류: '+p.err[0],'error'); status('출전 규약 오류','error'); return; }
-  if(!p.go){ result('정수가 하나도 출력되지 않았다. 첫 정수로 모습 번호(1~12)를 출력해야 나선다.','error'); status('출전 규약 오류','error'); return; }
+  if(!p.go){ result('정수가 하나도 출력되지 않았다. 첫 정수로 모습 번호(1~18)를 출력해야 나선다.','error'); status('출전 규약 오류','error'); return; }
   cfg=p.c; sortieCard(cfg); preview(cfg);
   startGame(cfg);
 }

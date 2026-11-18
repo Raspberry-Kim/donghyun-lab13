@@ -1,5 +1,5 @@
 // 화면 시험: node qa/ui.cjs (build 뒤 index.html을 파일로 연다)
-// 첫 화면·규약 오류·예제 열둘·키보드·마우스 찍기(몬스터=주먹, 길=걷기, 위로 튕김=점프)·메뉴 저장 칸 3개·.dhsave·첫 화면 칸 목록·클리어 카드→다음 도시·결과 카드·전체 화면·휴대폰 터치·시리즈 띠·콘솔 오류
+// 첫 화면·규약 오류·예제 열여덟·키보드·마우스 찍기(몬스터=주먹, 길=걷기, 위로 튕김=점프)·메뉴 저장 칸 3개·.dhsave·첫 화면 칸 목록·클리어 카드→다음 도시·결과 카드·전체 화면·휴대폰 터치·시리즈 띠·콘솔 오류
 const {chromium}=require('/home/user/node_modules/playwright'); const path=require('path'); const assert=require('assert'); const fs=require('fs');
 const url=process.argv[2]||'file://'+path.join(__dirname,'..','index.html');
 const H='window.__donghyunram';
@@ -19,21 +19,21 @@ const H='window.__donghyunram';
   // 0) 첫 화면: 설정 패널·미리보기·불러오기 칸 비어 있음·전체 화면 버튼 꺼짐
   assert.strictEqual(await G('D.mode'),'setup'); assert.ok(!(await p.$eval('#setup-panel',e=>e.hidden))); assert.ok(await p.$eval('#hud',e=>e.hidden));
   assert.deepStrictEqual(await p.$$eval('.slot-btn',a=>a.map(b=>b.disabled)),[true,true,true]); assert.ok(await p.$eval('#full',e=>e.disabled));
-  assert.strictEqual(await p.$eval('#example',e=>e.options.length),12); assert.match(await p.$eval('#stamp-forms',e=>e.textContent),/슈슈/);
+  assert.strictEqual(await p.$eval('#example',e=>e.options.length),18); assert.match(await p.$eval('#stamp-forms',e=>e.textContent),/슈슈/);
   assert.strictEqual(await p.$eval('.series-links',e=>e.children.length),19); assert.strictEqual(await p.$eval('.series-item.is-current .series-name',e=>e.textContent.replace('™','')),'동현램');
-  ok('첫 화면: 설정 패널 · 칸 비어 있음 · 예제 12 · 띠 19');
-  // 1) 규약 오류: 모습 번호 13 → 시작하지 않는다 · 정수 4개 → 오류
-  await p.fill('#code','나는 동현이냐?\n뿡뿡 도오오오오오오오오오오오오옹~뿡뿡뿡\n동현이구나'); await p.click('#run'); await p.waitForTimeout(100);
+  ok('첫 화면: 설정 패널 · 칸 비어 있음 · 예제 18 · 띠 19');
+  // 1) 규약 오류: 모습 번호 19 → 시작하지 않는다 · 정수 4개 → 오류
+  await p.fill('#code','나는 동현이냐?\n뿡뿡 도오오오오오오오오오오오오오오오오오오옹~뿡뿡뿡\n동현이구나'); await p.click('#run'); await p.waitForTimeout(100);
   assert.match(await p.$eval('#result',e=>e.textContent),/몬스터 번호가 아니다/); assert.strictEqual(await G('D.mode'),'setup');
   const pr=await G(`D.parseSortie('2 3 4 5')`); assert.strictEqual(pr.go,false); assert.match(pr.err[0],/4개/);
   const pr2=await G(`D.parseSortie('5 11 5')`); assert.deepStrictEqual([pr2.go,pr2.c.form,pr2.c.city,pr2.c.lives],[true,5,11,5]);
   const pr3=await G(`D.parseSortie('1 1 0')`); assert.deepStrictEqual([pr3.go,pr3.c.lives],[true,0]); ok('규약: 몬스터 범위 · 정수 개수 · 도시·목숨 읽기');
-  // 2) 예제 열둘 모두 시작된다 · 몬스터·도시·목숨이 맞다
-  for(const key of ['shushu','lion','copter','doom','podong','fly'])for(const monster of [false,true]){
-    const id=key+(monster?'-monster':'');await toSetup();await p.selectOption('#example',id);await p.click('#run');await p.waitForTimeout(100);
-    const t=await txt();assert.deepStrictEqual([t.mode,t.form,t.look,t.city,t.lives],['play',key,monster?'monster':'origin',1,key==='podong'?5:3]);assert.ok(!(await p.$eval('#hud',e=>e.hidden)));
+  // 2) 예제 열여덟 모두 시작된다 · 몬스터·도시·목숨이 맞다
+  for(const key of ['shushu','lion','copter','doom','podong','fly'])for(const look of ['origin','monster','legacy']){
+    const id=key+(look==='origin'?'':'-'+look);await toSetup();await p.selectOption('#example',id);await p.click('#run');await p.waitForTimeout(100);
+    const t=await txt();assert.deepStrictEqual([t.mode,t.form,t.look,t.city,t.lives],['play',key,look,1,key==='podong'?5:3]);assert.ok(!(await p.$eval('#hud',e=>e.hidden)));
   }
-  assert.strictEqual(await p.$eval('#form-card',e=>e.textContent.includes('초파리')),true); assert.match(await p.$eval('#day',e=>e.textContent),/도시 1 · 신중동/); ok('예제 열둘: 몬스터·시작 도시·목숨 · 모두 신중동');
+  assert.strictEqual(await p.$eval('#form-card',e=>e.textContent.includes('초파리')),true); assert.match(await p.$eval('#day',e=>e.textContent),/도시 1 · 신중동/); ok('예제 열여덟: 몬스터·시작 도시·목숨 · 모두 신중동');
   // 3) 키보드: → 걷기 · ↑ 건물 잡기 · X 주먹 · Z 점프 · A 설명 메뉴 · Enter 메뉴
   await toSetup(); await p.selectOption('#example','podong'); await p.click('#run'); await p.waitForTimeout(150); await p.evaluate(()=>document.querySelector('#board-wrap').scrollIntoView({block:'center'}));
   await p.focus('#board-wrap'); let x0=(await txt()).hero.x; await p.keyboard.down('ArrowRight'); await p.waitForTimeout(400); await p.keyboard.up('ArrowRight'); assert.ok((await txt()).hero.x>x0+10,'→ 걷기');
@@ -82,9 +82,9 @@ const H='window.__donghyunram';
   // 11) 다른 탭을 보면 멎는다
   await p.evaluate(()=>{ Object.defineProperty(document,'hidden',{get:()=>true,configurable:true}); document.dispatchEvent(new Event('visibilitychange')); }); await p.waitForTimeout(100); const t1=await G('S.time'); await p.waitForTimeout(500); assert.strictEqual(await G('S.time'),t1,'숨기면 멎는다');
   await p.evaluate(()=>{ Object.defineProperty(document,'hidden',{get:()=>false,configurable:true}); document.dispatchEvent(new Event('visibilitychange')); }); await p.waitForTimeout(300); assert.match(await menuText(),/잠시 멈춤/,'돌아오면 멈춤 메뉴'); await mi('계속 간다'); await p.waitForTimeout(300); assert.ok((await G('S.time'))>t1,'계속 간다'); ok('숨기면 멎는다 · 돌아오면 멈춤 메뉴');
-  // 12) 규칙 탭 표: 캐릭터 모습 12줄 · 적 5줄 · 도시 12줄
+  // 12) 규칙 탭 표: 캐릭터 모습 18줄 · 적 5줄 · 도시 12줄
   await p.click('.tab[data-tab="rules"]').catch(async()=>{ await p.click('text=규칙과 적'); }); await p.waitForTimeout(100);
-  assert.strictEqual(await p.$eval('#form-grid',e=>e.querySelectorAll('article').length===12),true); assert.ok((await p.$eval('#enemy-table',e=>e.querySelectorAll('tbody tr').length))>=5); assert.strictEqual(await p.$eval('#city-table',e=>e.querySelectorAll('tbody tr').length),12); ok('규칙 표: 몬스터·적·도시');
+  assert.strictEqual(await p.$eval('#form-grid',e=>e.querySelectorAll('article').length===18),true); assert.ok((await p.$eval('#enemy-table',e=>e.querySelectorAll('tbody tr').length))>=5); assert.strictEqual(await p.$eval('#city-table',e=>e.querySelectorAll('tbody tr').length),12); ok('규칙 표: 몬스터·적·도시');
   await p.evaluate(()=>localStorage.clear());
   // 13) 휴대폰: 터치만으로 시작 · 길 찍기 · 몬스터 찍기 · 위로 튕김 · 전체 화면 · 띠
   const ctx=await b.newContext({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true}); const m=await ctx.newPage();

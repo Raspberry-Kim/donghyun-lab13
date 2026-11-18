@@ -315,7 +315,7 @@ function shrunk(g,h,t){ const k=h.shrinkT; const sc=k>90?1-(120-k)/30*0.6:0.4; i
 const originRow={shushu:0,podong:1,lion:2,fly:3,doom:4,copter:5};
 const originMouth={shushu:[2,-27],podong:[7,-10],lion:[0,-41],fly:[0,-36],doom:[0,-38],copter:[0,-12]};
 function originBody(g,key,P,h,t){
-  const eat=h.eatT>0&&!(key==='copter'&&h.punchT===11&&h.rotorContact),wall=h.state==='climb'||h.state==='ride',hit=!eat&&h.punchT>0;
+  const eat=h.eatT>0&&!(h.wallContact&&h.punchT>=9&&h.punchT<=11)&&!(key==='copter'&&h.punchT===11&&h.rotorContact),wall=h.state==='climb'||h.state==='ride',hit=!eat&&h.punchT>0;
   const dx=(hit?h.pdx:0)||h.dir||1,dy=h.pdy||0,side=h.side||-1,walk=h.walkT||0;
   const dogWall=key==='podong'&&wall&&!eat,climbing=wall&&!eat&&(!hit||dogWall);
   const mode=eat?0:climbing?1:hit?(dy<0?4:dy>0?5:dx<0?2:3):walk?6:0;
@@ -341,7 +341,10 @@ function originBody(g,key,P,h,t){
     if(h.hurtT>0)g.rotate(-.12);
     if(key==='copter'){
       const ox=wall?side*11:0,oy=hit?0:-((t>>2)&1);
-      tailRotor(g,h,t,hit,dx,ox,oy,()=>draw(0,0,96,80,ox-48,oy-68,96,80));
+      const face=h.dir||1,im=document.getElementById('wall-sheet');
+      tailRotor(g,h,t,hit,dx,ox,oy,()=>{g.save();g.translate(ox,oy);g.scale(face,1);if(wall)g.rotate(.12*side*face);g.drawImage(im,0,400,31,26,-15,-24,31,26);g.restore();},face);
+    }else if(hit&&wall){
+      drawWallStrike(g,key,h,originRow[key]);
     }else{
       if(hit&&wall&&!dogWall)g.translate(side*12,0);
       const mirror=climbing?side>0:dx<0&&(!hit||dy!==0);
@@ -362,6 +365,7 @@ function originBody(g,key,P,h,t){
   g.restore();
 }
 function drawMonster(g,form,h,t,x,y){
+  if(form.look==='legacy')return RamLegacy.drawMonster(g,form,h,t,x,y);
   g.save(); g.translate(Math.round(x),Math.round(y));
   if(h.shrinkT>0){ if(h.dir<0) g.scale(-1,1); if(h.shrinkT>96&&((t>>1)&1)){ g.globalAlpha=0.5; } shrunk(g,h,t); g.restore(); return; }
   if(h.hurtT>0&&((t>>1)&1)&&h.eatT<=0) g.globalAlpha=0.55;

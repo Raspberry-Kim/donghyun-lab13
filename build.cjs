@@ -5,13 +5,15 @@ const root=__dirname,out=path.join(root,'dist'),src=n=>fs.readFileSync(path.join
 let css=src('style.css');
 for(const name of fs.readdirSync(path.join(root,'fonts')))
   css=css.replaceAll('./fonts/'+name,'data:font/woff2;base64,'+fs.readFileSync(path.join(root,'fonts',name)).toString('base64'));
-const JS=['donghyun.js','engine.js','climber-pixels.js','tail-rotor.js','sprites.js','render.js','examples.js','sfx.js','gamepad.js','app.js'];
+const JS=['donghyun.js','engine.js','climber-pixels.js','tail-rotor.js','wall-strike.js','sprites.js','sprites-v028.js','render.js','examples.js','sfx.js','gamepad.js','app.js'];
+const bundle=n=>n==='sprites-v028.js'?`(function(){const window={Engine:globalThis.Engine};${src(n)}\nglobalThis.RamLegacy=window.Sprites;})();`:src(n);
 const html=src('index.html')
   .replace('./origin.png','data:image/png;base64,'+fs.readFileSync(path.join(root,'src/origin.png')).toString('base64'))
+  .replace('./wall.png','data:image/png;base64,'+fs.readFileSync(path.join(root,'src/wall.png')).toString('base64'))
   .replace('__SERIES_NAV__',()=>src('series.html'))
   .replace('__BRAND_ICON__',()=>src('brand-icon.txt').trim())
   .replace('<link rel="stylesheet" href="./style.css">',()=>`<style>${css}</style>`)
-  .replace('<script src="./game.js"></script>',()=>'<script>'+JS.map(src).join('\n;\n').replaceAll('</script','<\\/script')+'</script>');
+  .replace('<script src="./game.js"></script>',()=>'<script>'+JS.map(bundle).join('\n;\n').replaceAll('</script','<\\/script')+'</script>');
 if(html.includes('src="./game.js"')||html.includes('__SERIES_NAV__'))throw new Error('스크립트를 묶지 못했다');
 fs.writeFileSync(path.join(root,'index.html'),html);
 fs.rmSync(out,{recursive:true,force:true});fs.mkdirSync(out,{recursive:true});
