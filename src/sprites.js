@@ -329,7 +329,11 @@ function originBody(g,key,P,h,t){
     const split=my+2+68;
     const faceBody=()=>{draw(0,split,96,80-split,-48,split-68,96,80-split);
       draw(0,0,96,split,-48+P.lean,-68+P.head,96,split);};
-    if(key==='copter')tailRotor(g,h,t,false,1,P.lean,P.head,faceBody);else faceBody();
+    if(key==='copter')tailRotor(g,h,t,false,1,P.lean,P.head,()=>{
+      const dog=document.getElementById('wall-sheet');
+      g.drawImage(dog,0,415,31,11,-15,-9,31,11);
+      g.drawImage(dog,0,400,31,15,-15+P.lean,-24+P.head,31,15);
+    });else faceBody();
     const x=mx+P.lean,y=my+P.head,w=key==='lion'?3:6,m=Math.round(P.mouth*6*(P.mouthBoost||1));
     if(P.eyes==='wide'){for(const s of [-1,1]){px(g,x+s*2-1,y-4,2,2,C.eye);px(g,x+s*2,y-4,1,1,C.pupil);}}
     else if(P.eyes==='closed'||P.eyes==='happy'||P.eyes==='half'){for(const s of [-1,1])px(g,x+s*2-1,y-3,2,1,C.line);}
@@ -352,7 +356,10 @@ function originBody(g,key,P,h,t){
       if(key==='fly'&&!hit&&!wall)g.translate(0,-((t>>(P.flap?1:2))&1));
       if(!hit&&!wall&&!walk&&key!=='fly'&&(t>>5&1))g.scale(1,1.018);
       const stride=mode===6?Math.round(2*Math.sin(walk*.42)):0;
-      if(stride&&(key==='fly'||key==='lion')){g.translate(0,-Math.abs(stride));draw(0,0,96,80,-48,-68,96,80);}
+      if(stride&&key==='shushu'){
+        draw(0,0,96,59,-48,-68,96,59);
+        for(const j of [0,1]){const step=(j?1:-1)*Math.sign(stride);draw(48*j,59,48,21,-48+j*48+step,-9-(step>0?1:0),48,21);}
+      }else if(stride&&(key==='fly'||key==='lion')){g.translate(0,-Math.abs(stride));draw(0,0,96,80,-48,-68,96,80);}
       else if(stride&&key!=='podong'){
         const cut=56,rise=Math.abs(stride);draw(0,0,96,cut,-48,-68-rise,96,cut+rise);
         draw(0,cut,48,24,-48-stride,cut-68,48,24);draw(48,cut,48,24,stride,cut-68-Math.max(0,stride),48,24);
