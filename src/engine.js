@@ -5,7 +5,7 @@
 'use strict';
 const W=320, H=200, GROUND=176, FLOOR=16, BW=40, GAP=24, SLOT=BW+GAP, COLS=2, CELL_W=BW/COLS, HAND=14, WALL_TOP=16, FX_MAX=180; /* 건물 사이 골목 24px: 몬스터가 서서 어느 쪽 벽을 탈지 고를 수 있다(원작도 건물 사이에 골목이 있다). */ /* 손은 발에서 14px 위. 옆벽의 가장 높은 자리는 꼭대기에서 16px 아래(거기서 가운데 주먹이 꼭대기 층에 닿는다) */
 const MAX_STAM=100, DRAIN_EVERY=240; /* 4초에 1칸: 가만히 있어도 6~7분은 버틴다. 맞아도 조금만 깎이고 먹으면 크게 차서 거의 가득 찬 채로 버틴다 */
-const FORMS=[
+const FAMILIES=[
   {id:1,key:'shushu',name:'슈슈',from:'동현파의 복서',color:'#cf6157',atk:1.5,def:0.7,reach:1,speed:1.0,hang:1.0,
    desc:'기본 몬스터. 빨간 글러브의 한 방이 세다(힘 150%, 창 하나를 한 방에 뚫는다). 대신 맷집이 약해 총알·포탄에 체력이 더 많이 깎인다(맷집 70%). 처음이라면 슈슈로 시작하자.'},
   {id:2,key:'lion',name:'라이언',from:'동현파의 분홍 선충',color:'#f0a3a3',atk:0.7,def:0.8,reach:2,speed:1.0,hang:1.0,
@@ -19,6 +19,10 @@ const FORMS=[
   {id:6,key:'fly',name:'초파리',from:'동현초의 초파리',color:'#d9b48a',atk:0.7,def:0.7,reach:1,speed:0.7,hang:6.0,fly:1,
    desc:'힘 70%·맷집 70%·걸음 70%로 모두 약하지만 날개가 있다. 떨어지는 속도가 1/6이고 공중에서 Z를 다시 누르면 날개를 쳐 떠오른다. 좌우로 방향을 바꾸며 거의 붕붕 날아다닌다.'}
 ];
+
+const origins=['동현파','동현파','동현콥','동현둠','동현크','동현초'];
+const originalLook=['동현파의 치마와 운동화, 권투 글러브를 그대로 살린 복서다.','동현파의 긴 분홍 선충에 팔 한 쌍만 붙였다.','동현콥에서 크림색 꼬리를 회전날개로 쓰던 모습이다.','동현둠의 철모에 넓은 흉갑과 두꺼운 군화를 새로 그렸다.','동현크에서처럼 네 발로 서고 앞발을 뻗는다.','동현초의 주황색 몸에 가느다란 다리 세 쌍과 반투명 날개가 달렸다.'];
+const FORMS=FAMILIES.flatMap((f,i)=>['origin','monster'].map((look,j)=>({...f,id:2*i+j+1,look,name:`${f.name}(${j?'몬스터':origins[i]})`,desc:(j?'원작 Rampage에 바치는 오마주로, 동현램의 등반형 몸체를 도트 픽셀로 직접 그렸다. ':originalLook[i]+' ')+f.desc.replace('기본 몬스터. ','')})));
 
 /* 도시: plan은 건물 폭(칸 수 1·2·3, 칸 20px)을 왼쪽부터 차례로 적은 것. 건물 수가 아니라 폭·높이·지붕 모양(roof)·배경(bg)으로 동네를 구별한다.
    roof: tank 물탱크 옥상 · sign 간판 옥상 · spire 뾰족탑 · pediment 박공 돌림띠 · hanok 기와 · cross 병원 십자 · wave 곡선 지붕 · glass 유리 지붕 · gable 박공 지붕 · dome 둥근 지붕

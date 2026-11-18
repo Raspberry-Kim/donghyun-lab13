@@ -84,7 +84,7 @@ const formOf=c=>FORMS[c.form-1];
 function sortieCard(c){
   const f=formOf(c);
   $('#sortie-card').innerHTML=[['몬스터',`${f.name} · ${f.from}`],['시작 도시',`${c.city} · ${CITIES[c.city-1].name} → ${CITIES.length} ${CITIES[CITIES.length-1].name}까지`],['목숨',c.lives===0?'무한':String(c.lives)],['조작','←→↑↓ 이동·오르기 · X 주먹 · Z 점프 · 화면을 직접 찍어도 된다']].map(([a,b])=>`<div><span>${a}</span><strong>${b}</strong></div>`).join('');
-  $('#stamp-forms').innerHTML=`${f.name} <span>몬스터</span>`;
+  $('#stamp-forms').innerHTML=`${f.name} <span>캐릭터</span>`;
 }
 function result(text,kind){ const r=$('#result'); r.textContent=text; r.dataset.kind=kind||''; }
 function status(t,kind){ const s=$('#status'); s.textContent=t; s.dataset.kind=kind||''; }
@@ -97,7 +97,7 @@ function sortie(){
   catch(e){ result(`동현랭 오류${e.line?` (${e.line}줄)`:''}: ${e.message}`,'error'); status('동현랭 오류','error'); return; }
   const p=parseSortie(out);
   if(p.err.length){ result('출전 규약 오류: '+p.err[0],'error'); status('출전 규약 오류','error'); return; }
-  if(!p.go){ result('정수가 하나도 출력되지 않았다. 첫 정수로 몬스터 번호(1~5)를 출력해야 나선다.','error'); status('출전 규약 오류','error'); return; }
+  if(!p.go){ result('정수가 하나도 출력되지 않았다. 첫 정수로 모습 번호(1~12)를 출력해야 나선다.','error'); status('출전 규약 오류','error'); return; }
   cfg=p.c; sortieCard(cfg); preview(cfg);
   startGame(cfg);
 }
@@ -235,7 +235,7 @@ function confirmMenu(q,opts,back){ openMenu(q,opts.map(([label,fn])=>({label,fn}
 function mainMenu(){ openMenu('잠시 멈춤',[['계속 간다',()=>{}],['몬스터 설명',()=>{ const f=E.form(S); openMenu(`${f.name} · ${f.from}: ${f.desc}`,[['닫기',()=>{}]],mainMenu); }],['저장',saveMenu],['불러오기',loadMenu],['포기하고 출전 준비로',()=>confirmMenu('포기하고 출전 준비로 돌아갈까?',[['포기한다',backToSetup],['계속 간다',()=>{}]],mainMenu)]]); }
 
 /* ---------- 저장·불러오기: 동현전·동현워·동현몬과 같은 브라우저 칸 3개 + .dhsave 파일 ---------- */
-const SAVE_FORMAT='donghyunram-save', SAVE_VERSION=1, SLOT_KEY=n=>'donghyunram:slot'+n, SLOTS=3;
+const SAVE_FORMAT='donghyunram-save', SAVE_VERSION=2, SLOT_KEY=n=>'donghyunram:slot'+n, SLOTS=3;
 function snapshot(){
   const state=JSON.parse(JSON.stringify(S,(k,v)=>k==='events'?[]:(v===Infinity?'inf':v)));
   const logs=[...$('#log').children].reverse().map(li=>li.textContent);
@@ -243,10 +243,11 @@ function snapshot(){
 }
 function restore(data){
   if(!data||data.format!==SAVE_FORMAT) throw new Error('동현램 저장 파일이 아니다.');
-  if(data.version!==SAVE_VERSION) throw new Error('지원하지 않는 저장 형식 버전이다('+data.version+').');
-  const st=data.state;
+  if(data.version!==1&&data.version!==SAVE_VERSION) throw new Error('지원하지 않는 저장 형식 버전이다('+data.version+').');
+  const st=data.state&&structuredClone(data.state);
   if(!st||!(Number.isInteger(st.city)&&st.city>=1&&st.city<=CITIES.length)) throw new Error('도시 정보가 맞지 않는다.');
-  if(!(Number.isInteger(st.formI)&&FORMS[st.formI])) throw new Error('몬스터 정보가 맞지 않는다.');
+  if(!(Number.isInteger(st.formI)&&st.formI>=0&&st.formI<(data.version===1?6:FORMS.length))) throw new Error('몬스터 정보가 맞지 않는다.');
+  if(data.version===1)st.formI=2*st.formI+1; // v0.50 이전 0~5는 기존 몬스터 모습으로 복원
   if(!Array.isArray(st.builds)||!st.builds.length||st.builds.some(b=>!Array.isArray(b.cells)||b.cells.length!==b.floors)) throw new Error('건물 정보가 맞지 않는다.');
   if(!Array.isArray(st.ens)||st.ens.some(e=>!EN[e.type])) throw new Error('적 정보가 맞지 않는다.');
   if(st.lives==='inf') st.lives=Infinity; else if(!(Number.isInteger(st.lives)&&st.lives>=1&&st.lives<=9)) throw new Error('목숨 정보가 맞지 않는다.');
@@ -343,6 +344,11 @@ canvas.addEventListener('pointerup',e=>{
   if(menu||mode!=='play') return;
   if(dt<400&&dy<-24&&Math.abs(dx)<Math.abs(dy)*1.5){ /* 위로 튕김: 점프(꼬리콥터는 공중에서 좌우 방향도) */ keys.jumpPressed=true; if(S.hero.hang>1.5&&Math.abs(dx)>10) target={x:p.x,y:p.y}; return; }
   const h=S.hero, hb=E.heroBox(h);
+  if(E.form(S).look==='origin'&&!h.shrinkT){
+    // 긴 선충·철모·양 갈래 머리도 직접 찍을 수 있게 한다. 전투 피격 범위는 바꾸지 않는다.
+    const heights={shushu:45,lion:47,copter:36,doom:51,podong:23,fly:33};
+    hb.h=Math.max(hb.h,heights[E.form(S).key]);hb.y=h.y-hb.h;
+  }
   if(pr.x>=hb.x-6&&pr.x<=hb.x+hb.w+6&&pr.y>=hb.y-6&&pr.y<=hb.y+hb.h+6){ /* 몬스터 자신: 주먹 */ keys.punchPressed=true; target=null; return; }
   if(pr.y>=E.GROUND+2){ pr.y=E.GROUND-4; }
   target={x:pr.x,y:pr.y}; h.dir=pr.x<h.x?-1:1;
@@ -351,7 +357,7 @@ canvas.addEventListener('pointercancel',()=>{ press=null; });
 $('#result-card').addEventListener('pointerdown',e=>{ if(e.target.tagName==='BUTTON') return; if(mode==='clear') nextCity(); else if(mode==='over') backToSetup(); });
 
 /* ---------- 시험용 연결 ---------- */
-window.render_game_to_text=()=>JSON.stringify(S?{mode,paused,city:S.city,status:S.status,lives:S.lives===Infinity?'inf':S.lives,score:S.score,form:E.form(S).key,
+window.render_game_to_text=()=>JSON.stringify(S?{mode,paused,city:S.city,status:S.status,lives:S.lives===Infinity?'inf':S.lives,score:S.score,form:E.form(S).key,look:E.form(S).look,
   hero:{x:Math.round(S.hero.x),y:Math.round(S.hero.y),stam:Math.round(S.hero.stam),state:S.hero.state,eatT:S.hero.eatT,eatKind:S.hero.eatKind},builds:S.builds.map(b=>b.state[0]+b.holes),
   enemies:S.ens.filter(e=>e.alive).map(e=>({t:e.type,x:Math.round(e.x),y:Math.round(e.y),hp:e.hp})),target}:{mode:'setup',cfg});
 window.__donghyunram={get state(){return S;},get confetti(){return {n:confetti.length,t:confettiT};},snd:SND,snapshot,restore,readSlot,saveToSlot,keyDown,keyUp,keys,get mode(){return mode;},get target(){return target;},start:()=>startGame(cfg),nextCity,parseSortie,
