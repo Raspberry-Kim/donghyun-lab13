@@ -36,7 +36,11 @@ const ROOF_KO={tank:'물탱크',sign:'옥상 간판',spire:'첨탑',pediment:'�
 $('#city-table').innerHTML='<thead><tr><th>도시</th><th>건물(칸)</th><th>층</th><th>지붕</th><th>군인</th><th>헬기</th><th>전차</th></tr></thead><tbody>'+CITIES.map((c,i)=>`<tr><td>${i+1} ${c.name}</td><td>${c.plan.join('·')}</td><td>${c.hMin}~${c.hMax}</td><td>${ROOF_KO[c.roof]||c.roof}</td><td>${c.soldier}</td><td>${c.heli||'—'}</td><td>${c.tank||'—'}</td></tr>`).join('')+'</tbody>';
 
 /* ---------- 동현랭 편집기(동현랭 시리즈와 같은 모양) ---------- */
-for(const ex of examples){const o=document.createElement('option');o.value=ex.id;o.textContent=ex.title;$('#example').append(o);}
+for(const label of new Set(examples.map(ex=>ex.group))){
+  const group=document.createElement('optgroup');group.label=label;
+  for(const ex of examples.filter(ex=>ex.group===label)){const o=document.createElement('option');o.value=ex.id;o.textContent=ex.title;group.append(o);}
+  $('#example').append(group);
+}
 const DH_TOKEN=/(ㅋㅋ.*$)|(나는 동현이냐\?|동현이구나)|(오겡끼데스까)|(신중동역|신중동|뭉치)|(뿡뿡뿡|뿡뿡|포동이)|(꽥꽥)|(동+현아)|(동+현)|(도오*옹)|(ㅠ+)|(뚱띠|또치)/g;
 const DH_CLS=[null,'t-cmt','t-frame','t-halt','t-ctl','t-out','t-in','t-assign','t-var','t-num','t-minus','t-op'];
 function dhLine(line){let html='',last=0;line.replace(DH_TOKEN,(m,...gr)=>{const idx=gr[gr.length-2];html+=esc(line.slice(last,idx));const k=gr.slice(0,11).findIndex(x=>x!==undefined)+1;html+=`<span class="${DH_CLS[k]}">${esc(m)}</span>`;last=idx+m.length;return m;});return html+esc(line.slice(last));}
