@@ -34,6 +34,6 @@ function play(formId,seed,maxFrames){
   }
   return {S,frames,punches,eats,rides,sits};
 }
-const forms=[1,2,3,4,5,6]; let line=[];
+const forms=E.FORMS.map(f=>f.id); let line=[];
 for(const f of forms){ const r=play(f,100+f,60*60*40); const S=r.S; line.push(`${E.FORMS[f-1].name}: ${S.status} 도시 ${S.city} 점수 ${S.score} 체력 ${Math.round(S.hero.stam)} 목숨 ${S.lives} 주먹 ${r.punches} 먹음 ${r.eats} 탑승 ${r.rides} 주저앉음 ${r.sits} 프레임 ${r.frames} (${(r.frames/3600).toFixed(1)}분)`); }
 console.log(line.join('\n'));

@@ -1,4 +1,4 @@
-// node qa/design.cjs [URL]: 12동네×6몬스터×5손상 단계, 순수 렌더와 반응형 검사.
+// node qa/design.cjs [URL]: 12동네×12모습×5손상 단계, 순수 렌더와 반응형 검사.
 const {chromium}=require('/home/user/node_modules/playwright');
 const fs=require('fs'),path=require('path'),assert=require('assert/strict');
 const out=path.join(__dirname,'tmp','design');fs.mkdirSync(out,{recursive:true});
@@ -12,7 +12,7 @@ const url=process.argv[2]||'file://'+path.join(__dirname,'..','index.html');
     const report=await p.evaluate(()=>{
       const c=document.createElement('canvas');c.width=320;c.height=200;const g=c.getContext('2d');
       const scenes=[],fail=[];let checks=0;const covers=new Set();
-      for(let city=1;city<=12;city++)for(let form=1;form<=6;form++)for(let stage=0;stage<5;stage++){
+      for(let city=1;city<=12;city++)for(let form=1;form<=12;form++)for(let stage=0;stage<5;stage++){
         const S=Engine.newGame({city,form,seed:42});S.msgT=0;S.time=180;
         S.fx=[{k:'chunk',n:0,sz:3,x:100,y:100,t:12,vx:0,vy:0}];
         if(stage>0)for(const b of S.builds){
@@ -35,9 +35,9 @@ const url=process.argv[2]||'file://'+path.join(__dirname,'..','index.html');
       }
       return {checks,fail,uniqueCities:covers.size,scenes};
     });
-    assert.equal(report.checks,360);assert.deepEqual(report.fail,[]);assert.equal(report.uniqueCities,12);
+    assert.equal(report.checks,720);assert.deepEqual(report.fail,[]);assert.equal(report.uniqueCities,12);
     for(const s of report.scenes)fs.writeFileSync(path.join(out,`city-${s.city}-stage-${s.stage}.png`),Buffer.from(s.image.split(',')[1],'base64'));
-    console.log('PASS 360장: 12동네×6몬스터×5손상 단계 · 상태 불변 · 반복 그림 동일');
+    console.log('PASS 720장: 12동네×12모습×5손상 단계 · 상태 불변 · 반복 그림 동일');
     await p.click('#run');await p.waitForFunction(()=>__donghyunram.mode==='play');
     // Real controls: walk, jump, menu roundtrip, fullscreen. Full input suite lives in ui.cjs.
     await p.locator('#board').click();await p.keyboard.down('ArrowRight');await p.waitForTimeout(150);await p.keyboard.up('ArrowRight');

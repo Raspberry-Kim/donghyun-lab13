@@ -7,6 +7,7 @@ for(const name of fs.readdirSync(path.join(root,'fonts')))
   css=css.replaceAll('./fonts/'+name,'data:font/woff2;base64,'+fs.readFileSync(path.join(root,'fonts',name)).toString('base64'));
 const JS=['donghyun.js','engine.js','climber-pixels.js','sprites.js','render.js','examples.js','sfx.js','gamepad.js','app.js'];
 const html=src('index.html')
+  .replace('./origin.png','data:image/png;base64,'+fs.readFileSync(path.join(root,'src/origin.png')).toString('base64'))
   .replace('__SERIES_NAV__',()=>src('series.html'))
   .replace('__BRAND_ICON__',()=>src('brand-icon.txt').trim())
   .replace('<link rel="stylesheet" href="./style.css">',()=>`<style>${css}</style>`)

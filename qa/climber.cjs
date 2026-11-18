@@ -18,7 +18,7 @@ try{const p=await b.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.messag
    new Function('window',source)(env);return env;
   }
   const old=traced(prev),now=traced(piece);const make=()=>{let c=document.createElement('canvas');c.width=144;c.height=144;return c.getContext('2d');};
-  const ga=make(),gb=make(),forms=Engine.FORMS,base={dir:1,state:'ground',walkT:0,punchT:0,eatT:0,hurtT:0,shrinkT:0,climbT:0};
+  const ga=make(),gb=make(),forms=Engine.FORMS.filter(f=>f.look==='monster'),base={dir:1,state:'ground',walkT:0,punchT:0,eatT:0,hurtT:0,shrinkT:0,climbT:0};
   let eats=0;for(const f of forms)for(const [kind,total] of [['gulp',36],['chew',48],['toss',54],['smoke',70]])for(let rem=total;rem>0;rem--)for(const what of ['person','taxi','cop','tram']){
    const h={...base,dir:rem%2?1:-1,eatT:rem,eatKind:kind,eatWhat:what,eatCity:4};
    old.log.length=now.log.length=0;let t=total-rem;old.Sprites.drawMonster(ga,f,h,t,70,115);now.Sprites.drawMonster(gb,f,h,t,70,115);

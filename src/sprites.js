@@ -312,12 +312,48 @@ function shrunk(g,h,t){ const k=h.shrinkT; const sc=k>90?1-(120-k)/30*0.6:0.4; i
 
 
 /* 몬스터 한 마리 그리기: form 객체, 상태 h, 시간 t, 발 기준 좌표 (x,y) */
+const originRow={shushu:0,podong:1,lion:2,fly:3,doom:4,copter:5};
+const originMouth={shushu:[2,-27],podong:[7,-10],lion:[0,-41],fly:[15,-17],doom:[0,-38],copter:[-1,-14]};
+function originBody(g,key,P,h,t){
+  const eat=h.eatT>0,wall=h.state==='climb'||h.state==='ride',hit=h.punchT>0&&h.punchT<14;
+  const n=eat?0:hit?1:wall||h.state==='air'?2:0,im=document.getElementById('origin-sheet'),[mx,my]=originMouth[key];
+  if(!im.complete||!im.naturalWidth)return;
+  const draw=(x,y,w,h,...dest)=>g.drawImage(im,84*n+x,70*originRow[key]+y,w,h,...dest);
+  const bob=h.walkT>0?Math.sin(h.walkT*.42):0,stride=Math.round(bob*2),rise=Math.round(Math.abs(bob)*2);
+  g.save();g.imageSmoothingEnabled=false;
+  if(eat){
+    const split=my+2+61;
+    draw(0,split,84,70-split,-38,split-61,84,70-split);
+    draw(0,0,84,split,-38+P.lean,-61+P.head,84,split);
+    const x=mx+P.lean,y=my+P.head,w=key==='lion'?3:6,m=Math.round(P.mouth*6*(P.mouthBoost||1));
+    if(P.eyes==='wide'){for(const s of [-1,1]){px(g,x+s*2-1,y-4,2,2,C.eye);px(g,x+s*2,y-4,1,1,C.pupil);}}
+    else if(P.eyes==='closed'||P.eyes==='happy'||P.eyes==='half'){for(const s of [-1,1])px(g,x+s*2-1,y-3,2,1,C.line);}
+    if(m){rrect(g,x-(w>>1),y,w,m,C.mouth,C.line);if(m>3){px(g,x-(w>>1),y,w,1,C.teeth);px(g,x-1,y+m-2,2,2,C.tongue);}}
+    // 물건·하트·연기는 출신형의 입을 기준으로 옮긴다. 포물선과 박자는 v0.50 그대로.
+    g.translate(mx-8,my-P.my);items(g,P,t);
+  }else{
+    if(wall&&!hit&&h.side*h.dir>0)g.scale(-1,1);
+    if(hit&&h.pdy)g.rotate(h.pdy*.50);
+    if(h.state==='sit')g.scale(1.08,.74);
+    if(h.hurtT>0)g.rotate(-.12);
+    if(key==='copter'||key==='fly')g.translate(0,-((t>>(P.flap?1:2))&1));
+    else if(!wall&&!hit&&!stride&&h.state==='ground')g.scale(1,1+((t>>5)&1)*.018);
+    if(wall&&!hit)g.translate(0,-((h.climbT>>2)&1));
+    if(stride&&n===0){
+      const cut=52;draw(0,0,84,cut,-38,-61-rise,84,cut+rise);
+      draw(0,cut,38,70-cut,-38-stride,cut-61,38,70-cut);
+      draw(38,cut,46,70-cut,stride,cut-61-Math.max(0,stride),46,70-cut);
+    }else draw(0,0,84,70,-38,-61,84,70);
+    if(P.extra.length)items(g,P,t);
+  }
+  g.restore();
+}
 function drawMonster(g,form,h,t,x,y){
   g.save(); g.translate(Math.round(x),Math.round(y));
   if(h.shrinkT>0){ if(h.dir<0) g.scale(-1,1); if(h.shrinkT>96&&((t>>1)&1)){ g.globalAlpha=0.5; } shrunk(g,h,t); g.restore(); return; }
   if(h.hurtT>0&&((t>>1)&1)&&h.eatT<=0) g.globalAlpha=0.55;
   const P=poseOf(h,t,form); if(!P.back&&h.dir<0) g.scale(-1,1); if(P.sx&&P.sy&&(P.sx!==1||P.sy!==1)) g.scale(P.sx,P.sy);
-  const key=FACE[form.key]?form.key:'podong'; body(g,P,t,key,h);
+  const key=FACE[form.key]?form.key:'podong'; if(form.look==='origin')originBody(g,key,P,h,t);else body(g,P,t,key,h);
   g.restore();
 }
 /* 표지·머리글용 서 있는 몬스터(가짜 상태) */
