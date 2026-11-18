@@ -5,7 +5,7 @@ const root=__dirname,out=path.join(root,'dist'),src=n=>fs.readFileSync(path.join
 let css=src('style.css');
 for(const name of fs.readdirSync(path.join(root,'fonts')))
   css=css.replaceAll('./fonts/'+name,'data:font/woff2;base64,'+fs.readFileSync(path.join(root,'fonts',name)).toString('base64'));
-const JS=['donghyun.js','engine.js','sprites.js','render.js','examples.js','sfx.js','gamepad.js','app.js'];
+const JS=['donghyun.js','engine.js','climber-pixels.js','sprites.js','render.js','examples.js','sfx.js','gamepad.js','app.js'];
 const html=src('index.html')
   .replace('__SERIES_NAV__',()=>src('series.html'))
   .replace('__BRAND_ICON__',()=>src('brand-icon.txt').trim())
