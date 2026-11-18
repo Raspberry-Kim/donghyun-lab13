@@ -349,18 +349,7 @@ function building(g,S,b,t,night){
   g.restore();
 }
 
-/* ---------- HUD ---------- */
-function hud(g,S,t){
-  const f=E.form(S), h=S.hero, Cc=E.cityOf(S);
-  px(g,0,0,W,14,'rgba(16,14,24,.82)'); px(g,0,14,W,1,'rgba(255,255,255,.12)');
-  g.font='bold 8px Pretendard, sans-serif'; g.textBaseline='top';
-  px(g,2,2,38,10,f.color); px(g,2,11,38,1,'rgba(0,0,0,.25)'); g.fillStyle='#1a1620'; g.fillText(f.name,5,3); /* 이름표: 글자 위아래 여백 1px */
-  const bx=44, bw=80; px(g,bx-1,3,bw+2,8,'#0e0c14'); px(g,bx,4,bw,6,'#2a2a3a'); const r=Math.max(0,h.stam/E.MAX_STAM); const col=r>0.5?'#5fb44a':r>0.25?'#f2b705':'#e5483a'; px(g,bx,4,Math.round(bw*r),6,col); px(g,bx,4,Math.round(bw*r),1,'rgba(255,255,255,.45)'); for(let i=1;i<10;i++) px(g,bx+i*8,4,1,6,'rgba(0,0,0,.25)');
-  g.fillStyle='#fff'; g.fillText(String(S.score).padStart(7,'0'),130,3);
-  for(let i=0;i<Math.min(S.lives===Infinity?3:S.lives,5);i++){ px(g,192+i*7,4,5,6,f.color); px(g,193+i*7,5,1,1,'#fff'); } if(S.lives===Infinity) g.fillText('∞',228,3);
-  g.textAlign='right'; g.fillText(`${S.city}/${E.CITIES.length} ${Cc.name}`,W-3,3); g.textAlign='left';
-  if(S.msgT>0&&S.msg){ g.fillStyle='rgba(16,14,24,.75)'; const w=g.measureText(S.msg).width+10; g.fillRect(W/2-w/2,18,w,12); g.fillStyle='#fff'; g.textAlign='center'; g.fillText(S.msg,W/2,20); g.textAlign='left'; }
-}
+/* 상단 상태 글씨는 픽셀 그림을 확대하지 않고 화면 해상도에서 별도로 표시한다. */
 function render(g,S,t){
   const night=isNight(E.cityOf(S));
   g.save(); if(S.shake>0){ /* 타격감: 기물이 부서지면 화면이 잠깐 들썩인다(결정적: 시간으로 정한다) */ const a=Math.min(3,Math.ceil(S.shake/2)); g.translate(((S.time*7)%3-1)*a,((S.time*5)%3-1)*a); }
@@ -374,7 +363,6 @@ function render(g,S,t){
   for(const x of S.fx){ if(x.k==='quake') continue; if(x.k==='chunk'){ const c=palOf(S,x.n||0); SP.fx(g,{...x,wall:(x.sz===3)?c.wall:c.wall2}); }else SP.fx(g,x); }
   g.restore();
   if(S.flashT>0){ g.fillStyle=`rgba(255,250,230,${S.flashT>=3?0.45:0.2})`; g.fillRect(0,0,W,H); }
-  hud(g,S,t);
 }
 root.Render={render,WALLS,isNight};
 })(typeof window!=='undefined'?window:module.exports);
