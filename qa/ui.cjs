@@ -20,6 +20,8 @@ const H='window.__donghyunram';
   assert.strictEqual(await G('D.mode'),'setup'); assert.ok(!(await p.$eval('#setup-panel',e=>e.hidden))); assert.ok(await p.$eval('#hud',e=>e.hidden));
   assert.deepStrictEqual(await p.$$eval('.slot-btn',a=>a.map(b=>b.disabled)),[true,true,true]); assert.ok(await p.$eval('#full',e=>e.disabled));
   assert.strictEqual(await p.$eval('#example',e=>e.options.length),18); assert.match(await p.$eval('#stamp-forms',e=>e.textContent),/슈슈/);
+  assert.deepStrictEqual(await p.$$eval('#example optgroup',groups=>groups.map(g=>[g.label,Array.from(g.children,o=>parseInt(o.textContent,10))])),[['-추천-',[1,5,9,11,3]],['-나머지-',[2,13,4,14,6,15,10,17,12,18,7,8,16]]]);
+  assert.strictEqual(await p.inputValue('#example'),'shushu');
   assert.strictEqual(await p.$eval('.series-links',e=>e.children.length),19); assert.strictEqual(await p.$eval('.series-item.is-current .series-name',e=>e.textContent.replace('™','')),'동현램');
   ok('첫 화면: 설정 패널 · 칸 비어 있음 · 예제 18 · 띠 19');
   // 1) 규약 오류: 모습 번호 19 → 시작하지 않는다 · 정수 4개 → 오류
