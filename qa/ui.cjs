@@ -22,8 +22,8 @@ const H='window.__donghyunram';
   assert.strictEqual(await p.$eval('#example',e=>e.options.length),18); assert.match(await p.$eval('#stamp-forms',e=>e.textContent),/슈슈/);
   assert.deepStrictEqual(await p.$$eval('#example optgroup',groups=>groups.map(g=>[g.label,Array.from(g.children,o=>parseInt(o.textContent,10))])),[['-추천-',[1,5,9,11,3]],['-나머지-',[2,13,4,14,6,15,10,17,12,18,7,8,16]]]);
   assert.strictEqual(await p.inputValue('#example'),'shushu');
-  assert.strictEqual(await p.$eval('.series-links',e=>e.children.length),23); assert.strictEqual(await p.$eval('.series-item.is-current .series-name',e=>e.textContent.replace('™','')),'동현램');
-  ok('첫 화면: 설정 패널 · 칸 비어 있음 · 예제 18 · 띠 23');
+  assert.strictEqual(await p.$eval('.series-links',e=>e.children.length),24); assert.strictEqual(await p.$eval('.series-item.is-current .series-name',e=>e.textContent.replace('™','')),'동현램');
+  ok('첫 화면: 설정 패널 · 칸 비어 있음 · 예제 18 · 띠 24');
   // 1) 규약 오류: 모습 번호 19 → 시작하지 않는다 · 정수 4개 → 오류
   await p.fill('#code','나는 동현이냐?\n뿡뿡 도오오오오오오오오오오오오오오오오오오옹~뿡뿡뿡\n동현이구나'); await p.click('#run'); await p.waitForTimeout(100);
   assert.match(await p.$eval('#result',e=>e.textContent),/몬스터 번호가 아니다/); assert.strictEqual(await G('D.mode'),'setup');
@@ -103,7 +103,7 @@ const H='window.__donghyunram';
   c1=await mat(20,150); const c2=await mat(20,90); await touch([{type:'start',pts:[{id:1,...c1}]},{type:'move',pts:[{id:1,x:c1.x,y:(c1.y+c2.y)/2}]},{type:'move',pts:[{id:1,...c2}]},{type:'end',pts:[{id:1,...c2}]}]); await m.waitForTimeout(60); assert.strictEqual(await MG('S.hero.state'),'air','위로 튕김 → 점프');
   await m.waitForTimeout(1500); await m.tap('#touchpad [data-key="x"]'); await m.waitForTimeout(40); assert.ok((await MG('S.hero.punchT'))>0,'터치패드 X 주먹');
   await m.tap('#full'); await m.waitForTimeout(500); assert.ok(!(await m.$eval('#exit-full',e=>e.hidden))); assert.ok((await m.$eval('#board',e=>e.getBoundingClientRect().width))>=360); await m.tap('#exit-full'); await m.waitForTimeout(300); assert.ok(await m.$eval('#exit-full',e=>e.hidden));
-  assert.strictEqual(await m.$eval('.series-links',e=>e.children.length),23); /* 띠 규칙: 항목이 짝수면 동현랭도 1/2 크기, 홀수면 동현랭만 두 칸으로 넓혀 아랫단을 맞춘다 */ const strip=await m.$eval('.series-links',e=>{ const n=e.children.length, L=e.querySelector('.series-item[data-series="lang"]'); const r=[...e.children].map(c=>c.getBoundingClientRect()); return {n, span:getComputedStyle(L).gridColumn.replace(/\s/g,''), langW:L.getBoundingClientRect().width, otherW:r[1].width, bottom:new Set(r.map(x=>Math.round(x.bottom))).size, rows:new Set(r.map(x=>Math.round(x.top))).size}; }); assert.strictEqual(strip.span,strip.n%2?'span2':'auto','짝수면 auto'); assert.ok(strip.langW>strip.otherW*1.9,'홀수: 동현랭 두 칸 폭'); assert.strictEqual(strip.rows,Math.ceil(strip.n/2),'두 열로 꽉 찬 줄 수'); ok('휴대폰: 터치 시작·길 찍기·몬스터 찍기·튕김·터치패드·전체 화면·띠');
+  assert.strictEqual(await m.$eval('.series-links',e=>e.children.length),24); /* 띠 규칙: 항목이 짝수면 동현랭도 1/2 크기, 홀수면 동현랭만 두 칸으로 넓혀 아랫단을 맞춘다 */ const strip=await m.$eval('.series-links',e=>{ const n=e.children.length, L=e.querySelector('.series-item[data-series="lang"]'); const r=[...e.children].map(c=>c.getBoundingClientRect()); return {n, span:getComputedStyle(L).gridColumn.replace(/\s/g,''), langW:L.getBoundingClientRect().width, otherW:r[1].width, bottom:new Set(r.map(x=>Math.round(x.bottom))).size, rows:new Set(r.map(x=>Math.round(x.top))).size}; }); assert.strictEqual(strip.span,strip.n%2?'span2':'auto','짝수면 auto'); assert.ok(Math.abs(strip.langW-strip.otherW)<=1,'짝수: 모두 같은 폭'); assert.strictEqual(strip.rows,Math.ceil(strip.n/2),'두 열로 꽉 찬 줄 수'); ok('휴대폰: 터치 시작·길 찍기·몬스터 찍기·튕김·터치패드·전체 화면·띠');
   await ctx.close(); await b.close();
   if(errs.length){ console.error('콘솔 오류',errs); process.exit(1); }
   console.log(`\n${n} ui tests passed · 콘솔 오류 0`);
